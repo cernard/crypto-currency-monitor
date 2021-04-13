@@ -1,0 +1,61 @@
+.box {
+  height: 100%;
+  width: 100%;
+  /* padding: 10px; */
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.item {
+  display: inline-block;
+  width: 100%;
+  padding-left: 10px;
+  padding-right: 10px;
+  margin-top: 2.5px;
+  margin-bottom: 2.5px;
+}
+
+.symbol {
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.symbolUnit {
+  font-size: 8px;
+  margin-right: 5px;
+}
+
+.price {
+  font-size: 28px;
+  margin-right: 5px;
+  color: rgba(238, 205, 73, 100);
+  font-weight: bold;
+}
+
+.line {
+  height: 1px;
+  background-color: rgba(187, 187, 187, 100);
+  width: 90%;
+}
+
+.line:last-child {
+  display: none;
+}
+
+.setting-icon {
+  display: inline-block;
+  position: absolute;
+  left: calc(100vw - 25px);
+  top: 15px;
+  height: 17px;
+  width: 17px;
+  cursor: pointer;
+  transition: ease-in-out 0.2s;
+  z-index: 9990;
+}
+
+.setting-icon:hover {
+  transform: rotate(90deg);
+}

@@ -1,0 +1,32 @@
+/*
+ * @NOTE: Prepend a `~` to css file paths that are in your node_modules
+ *        See https://github.com/webpack-contrib/sass-loader#imports
+ */
+body{
+  color: rgba(232, 232, 232, 100);
+  user-select: none;
+  border-radius: 10px;
+  box-shadow: 0 2px 6px 0 rgba(0, 0, 0, 0.4);
+  /* height: 97px; */
+  width: 240px;
+  /* -webkit-app-region: drag; */
+  overflow: hidden;
+  /* background: red; */
+  transition: ease-in-out 0.25s;
+}
+
+body:hover {
+  box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.4);
+}
+
+#root {
+  height: 100%;
+  width: 100%;
+  background-color: rgba(0, 0, 0, 0.493);
+  border-radius: 10px;
+  transition: ease-in-out 0.25s;
+}
+
+#root:hover {
+  background-color: rgba(0, 0, 0, 0.657);
+}
