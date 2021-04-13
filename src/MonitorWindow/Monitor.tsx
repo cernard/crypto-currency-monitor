@@ -2,11 +2,12 @@ import React from 'react';
 import { Component } from 'react';
 import { Link, Redirect } from 'react-router-dom';
 import styles from './style.css';
-import setting_icon from '../../../assets/setting.svg';
+import setting_icon from '../../assets/setting.svg';
+import '../App.global.css';
 
 const api = 'https://api.binance.com/api/v3/avgPrice?symbol='
 
-const { remote } = require('electron');
+const { remote, ipcRenderer } = require('electron');
 const win = remote.getCurrentWindow();
 
 class Monitor extends Component {
@@ -15,13 +16,13 @@ class Monitor extends Component {
       {
         label: 'BTC',
         unit: 'USDT',
-        avgPrice: 60000,
+        avgPrice: '',
         moneySymbol: '$'
       },
       {
         label: 'ETH',
         unit: 'USDT',
-        avgPrice: 218329,
+        avgPrice: '',
         moneySymbol: '$'
       }
     ]
@@ -46,11 +47,13 @@ class Monitor extends Component {
   }
 
   navigateToSetting = () => {
-    console.log(this.props)
+    ipcRenderer.send('showConfigWindow');
   }
 
   render() {
     const { monitor = [] } = this.state;
+    const [width, _] = win.getSize();
+    win.setSize(width, 40 * this.state.monitor.length + 10);
     return (
       <div className={styles['box']}>
         <img className={styles['setting-icon']} src={setting_icon} onClick={this.navigateToSetting} />

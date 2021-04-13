@@ -4,9 +4,8 @@ import chalk from 'chalk';
 import fs from 'fs';
 
 const mainPath = path.join(__dirname, '../../src/main.prod.js');
-const rendererPath = path.join(
-  __dirname, '../../src/dist/renderer.prod.js'
-);
+const ConfigWindow = getRendererPath('ConfigWindow');
+const MonitorWindow = getRendererPath('MonitorWindow');
 
 if (!fs.existsSync(mainPath)) {
   throw new Error(
@@ -16,10 +15,18 @@ if (!fs.existsSync(mainPath)) {
   );
 }
 
-if (!fs.existsSync(rendererPath)) {
+if (!fs.existsSync(ConfigWindow)) {
   throw new Error(
     chalk.whiteBright.bgRed.bold(
-      'The renderer process is not built yet. Build it by running "yarn build:renderer"'
+      'The ConfigWindow renderer process is not built yet. Build it by running "yarn build:renderer"'
+    )
+  );
+}
+
+if (!fs.existsSync(MonitorWindow)) {
+  throw new Error(
+    chalk.whiteBright.bgRed.bold(
+      'The MonitorWindow renderer process is not built yet. Build it by running "yarn build:renderer"'
     )
   );
 }

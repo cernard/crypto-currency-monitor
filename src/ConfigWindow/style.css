@@ -1,0 +1,135 @@
+body {
+  background-color: rgb(52, 52, 52) !important;
+}
+
+.container {
+  height: 100%;
+  width: 100%;
+}
+
+.title {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding-top: 10px;
+  padding-bottom: 10px;
+  background-color: rgb(34, 34, 34) !important;
+  text-align: center;
+  box-shadow: 0 2px 7px 0 rgb(34, 34, 34);
+}
+
+.close-btn {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  background-color: rgb(255, 110, 110);
+  border-radius: 12px;
+  position: absolute;
+  right: 10px;
+  cursor: pointer;
+}
+
+.close-btn:hover {
+  background-color: rgb(255, 80, 80);
+}
+
+.close-btn:active {
+  background-color: rgb(255, 60, 60);
+}
+
+.input-box {
+  display: flex;
+  justify-content: space-around;
+  margin-top: 18px;
+  height: 30px;
+}
+
+/* clear input style */
+.input {
+  outline: none;
+  border: 0px;
+  background: none;
+}
+
+.input {
+  display: inline-block;
+  width: 132px;
+  border-radius: 5px;
+  border: 1px solid rgb(100, 100, 100);
+  color: rgba(232, 232, 232, 100);
+  /* background-color: rgb(100, 100, 100); */
+}
+
+.input:focus {
+  outline: none;
+  background-color: rgb(100, 100, 100);
+}
+
+.add-btn {
+  display: inline-flex;
+  background-color: #33bf7f;
+  justify-content: center;
+  align-items: center;
+  width: 61px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.add-btn:hover {
+  background-color: #29a06b;
+}
+
+.add-btn:active {
+  background-color: #1b6d48;
+}
+
+.pair-list {
+  height: 100%;
+  margin-top: 10px;
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  align-content: flex-start;
+}
+
+.pair-item {
+  /* background-color: red; */
+  width: 90%;
+  display: inline-flex;
+  justify-content: space-around;
+  align-items: center;
+  height: 20px;
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
+
+.pair {
+}
+
+.delete-icon {
+  width: 15px;
+  height: 15px;
+  cursor: pointer;
+}
+
+.delete-icon:hover {
+  transition: ease-in-out 0.25s;
+  transform: rotate(90deg);
+}
+
+.delete-icon:active {
+  transition: ease-in-out 0.1s;
+  transform: scale(0.9);
+}
+
+.line {
+  height: 1px;
+  background-color: rgba(187, 187, 187, 100);
+  width: 90%;
+}
+
+.line:last-child {
+  display: none;
+}

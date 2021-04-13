@@ -11,7 +11,7 @@
 import 'core-js/stable';
 import 'regenerator-runtime/runtime';
 import path from 'path';
-import { app, BrowserWindow, shell } from 'electron';
+import { app, BrowserWindow, shell, ipcMain } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 import MenuBuilder from './menu';
@@ -25,7 +25,9 @@ export default class AppUpdater {
   }
 }
 
-let mainWindow: BrowserWindow | null = null;
+let monitorWindow: BrowserWindow | null = null;
+let configWindow: BrowserWindow | null = null;
+
 
 if (process.env.NODE_ENV === 'production') {
   const sourceMapSupport = require('source-map-support');
@@ -68,10 +70,10 @@ const createWindow = async () => {
     return path.join(RESOURCES_PATH, ...paths);
   };
 
-  mainWindow = new BrowserWindow({
+  monitorWindow = new BrowserWindow({
     show: false,
-    width: config.winWidth,
-    height: config.winHeight,
+    width: config.winMonitorWidth,
+    height: config.winMonitorHeight,
     icon: getAssetPath('coin-bitcoin.png'),
     webPreferences: {
       nodeIntegration: true,
@@ -89,31 +91,84 @@ const createWindow = async () => {
     fullscreen: false
   });
 
-  mainWindow.loadURL(`file://${__dirname}/index.html`);
+  configWindow = new BrowserWindow({
+    show: false,
+    width: config.winConfigWidth,
+    height: config.winConfigHeight,
+    icon: getAssetPath('coin-bitcoin.png'),
+    webPreferences: {
+      nodeIntegration: true,
+      enableRemoteModule: true
+    },
+    frame: false,
+    transparent: true,
+    resizable: false,
+    alwaysOnTop: true,
+    // type: 'toolbar',
+    hasShadow: true,
+    backgroundColor: '#00000000',
+    fullscreenable: false,
+    maximizable: false,
+    fullscreen: false,
+    parent: monitorWindow
+  });
+
+
+
+  monitorWindow.loadURL(`file://${__dirname}/MonitorWindow/index.html`);
+  configWindow.loadURL(`file://${__dirname}/ConfigWindow/index.html`);
 
   // @TODO: Use 'ready-to-show' event
   //        https://github.com/electron/electron/blob/master/docs/api/browser-window.md#using-ready-to-show-event
-  mainWindow.webContents.on('did-finish-load', () => {
-    if (!mainWindow) {
-      throw new Error('"mainWindow" is not defined');
+  monitorWindow.webContents.on('did-finish-load', () => {
+    if (!monitorWindow) {
+      throw new Error('"monitorWindow" is not defined');
     }
     if (process.env.START_MINIMIZED) {
-      mainWindow.minimize();
+      monitorWindow.minimize();
     } else {
-      mainWindow.show();
-      mainWindow.focus();
+      monitorWindow.show();
+      monitorWindow.focus();
+    }
+  });
+  configWindow.webContents.on('did-finish-load', () => {
+    if (!configWindow) {
+      throw new Error('"monitorWindow" is not defined');
+    }
+    if (process.env.START_MINIMIZED) {
+      configWindow.minimize();
+    }
+    else {
+    //   configWindow.show();
+    //   configWindow.focus();
     }
   });
 
-  mainWindow.on('closed', () => {
-    mainWindow = null;
+  monitorWindow.on('closed', () => {
+    monitorWindow = null;
+  });
+  configWindow.on('closed', () => {
+    configWindow = null;
   });
 
-  const menuBuilder = new MenuBuilder(mainWindow);
-  menuBuilder.buildMenu();
+  configWindow.webContents.on('before-input-event', (event, input) => {
+    if (input.key.toLowerCase() === 'escape') {
+      configWindow?.hide()
+      event.preventDefault()
+    }
+  })
+
+  const menuBuilder1 = new MenuBuilder(monitorWindow);
+  menuBuilder1.buildMenu();
+  const menuBuilder2 = new MenuBuilder(configWindow);
+  menuBuilder2.buildMenu();
 
   // Open urls in the user's browser
-  mainWindow.webContents.on('new-window', (event, url) => {
+  monitorWindow.webContents.on('new-window', (event, url) => {
+    event.preventDefault();
+    shell.openExternal(url);
+  });
+  configWindow.webContents.on('new-window', (event, url) => {
     event.preventDefault();
     shell.openExternal(url);
   });
@@ -140,5 +195,14 @@ app.whenReady().then(createWindow).catch(console.log);
 app.on('activate', () => {
   // On macOS it's common to re-create a window in the app when the
   // dock icon is clicked and there are no other windows open.
-  if (mainWindow === null) createWindow();
+  if (monitorWindow === null || configWindow === null) createWindow();
+});
+
+ipcMain.on('showConfigWindow', () => {
+  configWindow?.show()
+  configWindow?.focus()
+});
+
+ipcMain.on('hideConfigWindow', () => {
+  configWindow?.hide()
 });

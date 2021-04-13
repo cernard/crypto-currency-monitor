@@ -35,10 +35,11 @@
     "appId": "org.erb.ElectronReact",
     "files": [
       "dist/",
-      "node_modules/",
-      "index.html",
-      "main.prod.js",
-      "main.prod.js.map",
+      "src/node_modules/",
+      "src/ConfigWindow/index.html",
+      "src/MonitorWindow/index.html",
+      "src/main.prod.js",
+      "src/main.prod.js.map",
       "package.json"
     ],
     "afterSign": ".erb/scripts/Notarize.js",

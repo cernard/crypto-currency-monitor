@@ -1,7 +1,7 @@
 import React from 'react';
 import { render } from 'react-dom';
-import App from './App';
-import config from './config';
+import Configurator from './Configurator';
+import config from '../config';
 
 const electron = require('electron');
 const { remote, ipcRenderer } = electron;
@@ -29,8 +29,13 @@ document.addEventListener('mouseup', () => {
   document.removeEventListener('mousemove', moveEvent)
 });
 
+document.addEventListener('keypress', (e) => {
+  console.log(e)
+})
+
 const moveEvent = (e: MouseEvent) => {
-  win.setBounds({ x: e.screenX - biasX, y: e.screenY - biasY, width: config.winWidth, height: config.winHeight })
+  const [width, height] = win.getSize();
+  win.setBounds({ x: e.screenX - biasX, y: e.screenY - biasY, width: width, height: height })
 }
 
-render(<App />, document.getElementById('root'));
+render(<Configurator />, document.getElementById('root'));

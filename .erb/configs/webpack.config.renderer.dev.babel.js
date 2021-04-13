@@ -41,15 +41,39 @@ export default merge(baseConfig, {
 
   target: 'electron-renderer',
 
-  entry: [
-    'core-js',
-    'regenerator-runtime/runtime',
-    require.resolve('../../src/index.tsx'),
-  ],
+  // entry: [
+  //   'core-js',
+  //   'regenerator-runtime/runtime',
+  //   MonitorWindow: [
+  //     'react-hot-loader/patch',
+  //     `webpack-dev-server/client?http://localhost:${port}/`,
+  //     'webpack/hot/only-dev-server',
+  //     require.resolve('../../src/MonitorWindow/index.tsx')
+  //   ],
+  //   ConfigWindow: [
+  //     'react-hot-loader/patch',
+  //     `webpack-dev-server/client?http://localhost:${port}/`,
+  //     'webpack/hot/only-dev-server',
+  //     require.resolve('../../src/ConfigWindow/index.tsx')
+  //   ]
+  // ],
+
+  entry: {
+    MonitorWindow: [
+      `webpack-dev-server/client?http://localhost:${port}/`,
+      'webpack/hot/only-dev-server',
+      require.resolve('../../src/MonitorWindow/index.tsx')
+    ],
+    ConfigWindow: [
+      `webpack-dev-server/client?http://localhost:${port}/`,
+      'webpack/hot/only-dev-server',
+      require.resolve('../../src/ConfigWindow/index.tsx')
+    ]
+  },
 
   output: {
     publicPath: `http://localhost:${port}/dist/`,
-    filename: 'renderer.dev.js',
+    filename: '[name].renderer.dev.js'
   },
 
   module: {
