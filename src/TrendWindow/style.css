@@ -5,57 +5,37 @@
   display: flex;
   flex-direction: row;
   justify-content: center;
+  align-items: center;
   flex-wrap: wrap;
 }
 
-.item {
+.title {
+  margin-top: 7px;
+  font-size: 12px;
+}
+
+.trend-chart {
   display: inline-block;
-  width: 100%;
-  padding-left: 10px;
-  padding-right: 10px;
-  margin-top: 2.5px;
-  margin-bottom: 2.5px;
+  height: 40px !important;
+  width: 85%;
+  /* background-color: bisque; */
 }
 
-.symbol {
-  font-size: 16px;
-  font-weight: bold;
+.info-bar {
+  height: 20px;
+  font-size: 14px;
+  width: 85%;
+  display: flex;
+  justify-content: space-between;
+  position: relative;
+  bottom: 7px;
 }
 
-.symbolUnit {
-  font-size: 8px;
-  margin-right: 5px;
-}
-
-.price {
-  font-size: 28px;
-  margin-right: 5px;
+.info-bar-price {
   color: rgba(238, 205, 73, 100);
-  font-weight: bold;
+  margin-right: 2px;
 }
 
-.line {
-  height: 1px;
-  background-color: rgba(187, 187, 187, 100);
-  width: 90%;
-}
-
-.line:last-child {
-  display: none;
-}
-
-.setting-icon {
-  display: inline-block;
-  position: absolute;
-  left: calc(100vw - 25px);
-  top: 10px;
-  height: 17px;
-  width: 17px;
-  cursor: pointer;
-  transition: ease-in-out 0.25s;
-  z-index: 9990;
-}
-
-.setting-icon:hover {
-  transform: rotate(90deg);
+.info-bar-upanddown {
+  color: rgb(41, 209, 143);
 }

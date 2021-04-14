@@ -5,7 +5,6 @@ import styles from './style.css';
 import config from '../config';
 import '../App.global.css';
 import delete_icon from '../../assets/delete.svg'
-const api = 'https://api.binance.com/api/v3/avgPrice?symbol='
 
 const { remote, ipcRenderer } = require('electron');
 const win = remote.getCurrentWindow();

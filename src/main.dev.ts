@@ -16,6 +16,7 @@ import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 import MenuBuilder from './menu';
 import config from './config';
+import { IpcMainEvent } from 'electron/main';
 
 const fs = require('fs')
 export default class AppUpdater {
@@ -131,7 +132,7 @@ const createWindow = async () => {
     fullscreenable: false,
     maximizable: false,
     fullscreen: false,
-    parent: monitorWindow
+    // parent: monitorWindow
   });
 
 
@@ -172,8 +173,8 @@ const createWindow = async () => {
       trendWindow?.minimize();
     }
     else {
-      configWindow.show();
-      configWindow.focus();
+      // trendWindow?.show();
+      // trendWindow?.focus();
     }
   });
 
@@ -255,12 +256,16 @@ ipcMain.on('hideConfigWindow', () => {
   configWindow?.hide()
 });
 
-ipcMain.on('showTrendWindow', () => {
+ipcMain.on('showTrendWindow', (event: IpcMainEvent, args: any) => {
+  trendWindow?.webContents.send('updatePair', args);
+  const [x, y] = monitorWindow?.getPosition();
+  trendWindow?.setPosition(x, y - config.winTrendHeight - 10);
   trendWindow?.show()
   trendWindow?.focus()
 });
 
 ipcMain.on('hideTrendWindow', () => {
+  trendWindow?.webContents.send('stopUpdate');
   trendWindow?.hide()
 });
 
@@ -273,7 +278,7 @@ ipcMain.on('loadConfig', (event) => {
           type:'error',
           title: "Error",
           message: `Can't write config data to disk. ${err}`,
-          //点击后返回数组下标
+          //点击后返回数组下�?
           buttons:['Ok']
         })
       });
@@ -292,7 +297,7 @@ ipcMain.on('saveConfig', (event, args) => {
         type:'error',
         title: "Error",
         message: `Can't write config data to disk. ${err}`,
-        //点击后返回数组下标
+        //点击后返回数组下�?
         buttons:['Ok']
       })
     }

@@ -69,7 +69,7 @@ export default merge(baseConfig, {
       'webpack/hot/only-dev-server',
       require.resolve('../../src/ConfigWindow/index.tsx')
     ],
-    ConfigWindow: [
+    TrendWindow: [
       `webpack-dev-server/client?http://localhost:${port}/`,
       'webpack/hot/only-dev-server',
       require.resolve('../../src/TrendWindow/index.tsx')

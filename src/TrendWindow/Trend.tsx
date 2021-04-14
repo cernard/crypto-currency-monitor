@@ -1,139 +1,193 @@
 import React from 'react';
 import { Component } from 'react';
-import { Link, Redirect } from 'react-router-dom';
 import styles from './style.css';
-import setting_icon from '../../assets/setting.svg';
 import '../App.global.css';
 import config from '../config';
 import ReactECharts from 'echarts-for-react';
-import * as echarts from 'echarts'
+import * as echarts from 'echarts';
+import "echarts/lib/component/graphic";
 
-const api = 'https://api.binance.com/api/v3/avgPrice?symbol='
+const avgPriceAPI = 'https://api.binance.com/api/v3/avgPrice';
+const kLineDataAPI = 'https://api.binance.com/api/v3/klines';
+const priceChangeIn24HAPI = 'https://api.binance.com/api/v3/ticker/24hr';
 
 const { remote, ipcRenderer } = require('electron');
 const win = remote.getCurrentWindow();
-
-const option = {
-  xAxis: {
-      type: 'category',
-      data: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-      axisLabel: {
-          show: false
-      },
-      axisLine: {
-          show: false
-      },
-      axisTick: {
-          show: false
-      },
-      splitLine: {
-          show: false
-      }
-  },
-  yAxis: {
-      type: 'value',
-      axisLabel: {
-          show: false
-      },
-      axisLine: {
-          show: false
-      },
-      axisTick: {
-          show: false
-      },
-      splitLine: {
-          show: false
-      }
-  },
-  series: [{
-      data: [150, 230, 224, 218, 135, 147, 260],
-      type: 'line',
-      itemStyle: {
-          opacity: 0
-      },
-      lineStyle: {
-          color: 'rgba(238, 205, 73, 100)'
-      },
-      areaStyle: {
-          color: new echarts.grapic.LinearGradient(0, 0, 0, 1,[{
-                   offset: 0, color: 'rgb(235, 208, 100)' // 0% 处的颜色
-                   },{
-                       offset: 0.4, color: '#fff' // 100% 处的颜色
-                   }]
-       )
-      }
-  }]
-};
-
 class Trend extends Component {
   state = {
-    monitor: [
-    ]
+    option: {
+      grid: {
+        left: 0,
+        top: 0,
+        right: 0,
+        bottom: 0
+      },
+      xAxis: {
+          type: 'category',
+          data: [],
+          axisLabel: {
+              show: false
+          },
+          axisLine: {
+              show: false
+          },
+          axisTick: {
+              show: false
+          },
+          splitLine: {
+              show: false
+          }
+      },
+      yAxis: {
+          type: 'value',
+          axisLabel: {
+              show: false
+          },
+          axisLine: {
+              show: false
+          },
+          axisTick: {
+              show: false
+          },
+          splitLine: {
+              show: false
+          }
+      },
+      series: [{
+          data: [],
+          type: 'line',
+          // itemStyle: {
+          //     opacity: 0
+          // },
+          lineStyle: {
+              color: 'rgba(238, 205, 73, 100)'
+          },
+          areaStyle: {
+              color: new echarts.graphic.LinearGradient(0, 0, 0, 1,[{
+                       offset: 0, color: 'rgb(235, 208, 100)' // 0% 处的颜色
+                       },{
+                           offset: 0.55, color: 'rgb(0, 0, 0, 0)' // 100% 处的颜色
+                       }]
+           )
+          }
+      }],
+      tooltip: {
+        show: true,
+        formatter: (param: any, ticket: string, callback: Function) => {
+          return parseFloat(param.value).toFixed(0) + ' $'
+        },
+        padding: 0,
+        backgroundColor: 'transparent',
+        borderWidth: 0,
+        textStyle: {
+            color: 'rgba(238, 205, 73, 100)',
+            fontSize: 12
+        },
+        extraCssText: 'box-shadow: 0 0 0px rgba(0, 0, 0, 0);',
+        position: ([x, y]) => {
+          return [x + 10, y + 10]
+        }
+      }
+    },
+    pair: 'BTC/USDT',
+    price: 0,
+    changePercentIn24H: '0'
   };
 
-  priceIntervals = [];
+  priceInterval: any = null;
+  kDataInterval: any = null;
+  priceChangeIn24HInterval: any = null;
 
-  componentDidMount() {
-    // ipcRenderer.send('loadConfig');
-    // ipcRenderer.on('reciveConfig', (_, args) => {
-    //   const configJson = JSON.parse(args);
-    //   if (configJson['pairs'] == null) {
-    //     this.setState({...this.state, monitor: [] });
-    //   } else {
-    //     const monitor = [];
-    //     configJson['pairs'].forEach(pair => {
-    //       const symbol = pair.split('/')[0];
-    //       const unit = pair.split('/')[1];
-    //       if (symbol && unit) {
-    //         monitor.push({
-    //           label: symbol,
-    //           unit: unit,
-    //           avgPrice: 0,
-    //           moneySymbol: '$'
-    //         })
-    //       }
-    //     });
-    //     this.setState({...this.state, monitor});
-    //   }
-    // });
+  constructor(props: any) {
+    super(props);
+    ipcRenderer.on('updatePair', (event, pair) => {
+      if (this.state.pair !== pair) {
+        this.setState({...this.state, pair: pair});
+
+        clearInterval(this.priceInterval);
+        clearInterval(this.kDataInterval);
+        clearInterval(this.priceChangeIn24HInterval);
+
+        console.log(pair);
+        this.updatePrice(pair);
+        this.updateTrend(pair);
+        this.updateChangePercent(pair);
+
+        this.priceInterval = setInterval(() => this.updatePrice(pair), 2000);
+        this.kDataInterval = setInterval(() => this.updateTrend(pair), 2000);
+        this.priceChangeIn24HInterval = setInterval(() => this.updateChangePercent(pair), 2000);
+      }
+    });
+
+    ipcRenderer.on('stopUpdate', () => {
+      clearInterval(this.priceInterval);
+      clearInterval(this.kDataInterval);
+      clearInterval(this.priceChangeIn24HInterval);
+    });
   }
 
-  shouldComponentUpdate(props, state) {
-    // this.priceIntervals.forEach(intervalHandle => clearInterval(intervalHandle));
-    // this.priceIntervals = [];
-    // state.monitor.forEach(info => {
-    //   const intervalHandle = setInterval(() => this.updatePrice(info.label, info.unit), 1000);
-    //   this.priceIntervals.push(intervalHandle);
-    // });
-    return true;
+  updatePrice = (pair: string) => {
+    fetch(avgPriceAPI + '?symbol=' + pair.toUpperCase().replace('/', ''))
+    .then(rep => rep.json())
+    .then(data => {
+      this.setState({price: parseFloat(data['price']).toFixed(0)});
+    })
+    .catch(e => console.log(e));
   }
 
-  updatePrice = (label: string, unit: String) => {
-    // fetch(api + label.toUpperCase() + unit.toUpperCase())
-    // .then(rep => rep.json())
-    // .then(data => {
-    //   const monitor = this.state.monitor.slice();
-    //   const origin = monitor.find(info => info.label === label && info.unit === unit);
-    //   if (origin) {
-    //     origin.avgPrice = parseFloat(data['price']).toFixed(0);
-    //     this.setState({...this.state, monitor});
-    //   }
-    // });
+  updateTrend = (pair: string) => {
+    let option = JSON.parse(JSON.stringify(this.state.option));
+
+    fetch(kLineDataAPI + '?symbol=' + pair.toUpperCase().replace('/', '') + '&interval=1h' + '&startTime=1618326000000' + '&endTime=1618416000000')
+    .then(rep => rep.json())
+    .then(data => {
+      option.xAxis.data = data.map(d => 0);
+      option.series = [];
+      option.series[0] = {
+        data: data.map(d => d[1]),
+        type: 'line',
+        itemStyle: {
+            opacity: 0
+        },
+        lineStyle: {
+            color: 'rgba(238, 205, 73, 100)'
+        },
+        areaStyle: {
+            color: new echarts.graphic.LinearGradient(0, 0, 0, 1,[{
+                     offset: 0, color: 'rgb(235, 208, 100)' // 0% 处的颜色
+                     },{
+                         offset: 0.55, color: 'rgb(0, 0, 0, 0)' // 100% 处的颜色
+                     }]
+         )
+        }
+      };
+      this.setState({...this.state, option})
+    })
+    .catch(e => console.log(e));
   }
 
-  getOption = () => {
-
-    return option;
+  updateChangePercent = (pair: string) => {
+    fetch(priceChangeIn24HAPI + '?symbol=' + pair.replace('/', ''))
+    .then(rep => rep.json())
+    .then(data => {
+      this.setState({...this.state, changePercentIn24H: data['priceChangePercent'] + '%'})
+    })
+    .catch(e => console.log(e));
   }
 
   render() {
-    const { monitor = [] } = this.state;
-    win.setSize(100, 500)
-    console.log(echarts)
+    const { option = {}, price, changePercentIn24H } = this.state;
     return (
       <div className={styles['box']}>
-        <div>24H Trend</div>
-        <ReactECharts option={option} />
+        <div className={styles['title']}>Last 1H Trend</div>
+        <ReactECharts option={option} className={styles['trend-chart']}/>
+        <div className={styles['info-bar']}>
+          <span>
+            <span className={styles['info-bar-price']}>{price}</span>
+            <span>$</span>
+          </span>
+          <span className={styles['info-bar-upanddown']} style={{color: changePercentIn24H.indexOf('-') >= 0 ? 'rgb(231, 90, 112)': 'rgba(41, 209, 143, 100)'}}>{changePercentIn24H}</span>
+        </div>
       </div>
     );
   }

@@ -38,6 +38,7 @@ class Monitor extends Component {
               moneySymbol: '$'
             })
           }
+          this.updatePrice(symbol, unit);
         });
         this.setState({...this.state, monitor});
       }
@@ -48,7 +49,7 @@ class Monitor extends Component {
     this.priceIntervals.forEach(intervalHandle => clearInterval(intervalHandle));
     this.priceIntervals = [];
     state.monitor.forEach(info => {
-      const intervalHandle = setInterval(() => this.updatePrice(info.label, info.unit), 1000);
+      const intervalHandle = setInterval(() => this.updatePrice(info.label, info.unit), 2000);
       this.priceIntervals.push(intervalHandle);
     });
     return true;
@@ -67,9 +68,22 @@ class Monitor extends Component {
     });
   }
 
+  showTrendWindow = (pair: string) => {
+    console.log(pair)
+    ipcRenderer.send('showTrendWindow', pair);
+  }
+
+  hideTrendWindow = () => {
+    ipcRenderer.send('hideTrendWindow');
+  }
+
+  navigateToSetting = () => {
+    ipcRenderer.send('showConfigWindow');
+  }
+
   render() {
     const { monitor = [] } = this.state;
-    config.winMonitorHeight = 40 * this.state.monitor.length + 10;
+    config.winMonitorHeight = 40 * this.state.monitor.length + 8 * this.state.monitor.length;
     win.setSize(config.winMonitorWidth, config.winMonitorHeight);
     return (
       <div className={styles['box']}>
@@ -77,7 +91,11 @@ class Monitor extends Component {
         {
           monitor.map(item => (
             <>
-              <div className={styles['item']}>
+              <div
+              className={styles['item']}
+              onMouseDown={() => this.showTrendWindow(item.label + '/' + item.unit)}
+              onMouseUp={() => this.hideTrendWindow()}
+              >
                 <span className={styles['symbol']}>{item.label}</span>
                 <span className={styles['symbolUnit']}>/{item.unit}</span>
                 <span className={styles['price']}>{item.avgPrice}</span>
