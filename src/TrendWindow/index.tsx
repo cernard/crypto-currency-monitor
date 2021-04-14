@@ -1,6 +1,6 @@
 import React from 'react';
 import { render } from 'react-dom';
-import Configurator from './Configurator';
+import Trend from './Trend';
 import config from '../config';
 
 const electron = require('electron');
@@ -30,7 +30,7 @@ document.addEventListener('mouseup', () => {
 });
 
 const moveEvent = (e: MouseEvent) => {
-  win.setBounds({ x: e.screenX - biasX, y: e.screenY - biasY, width: config.winConfigWidth, height: config.winConfigHeight })
+  win.setBounds({ x: e.screenX - biasX, y: e.screenY - biasY, width: config.winTrendWidth, height: config.winTrendHeight })
 }
 
-render(<Configurator />, document.getElementById('root'));
+render(<Trend />, document.getElementById('root'));

@@ -6,6 +6,7 @@ import fs from 'fs';
 const mainPath = path.join(__dirname, '../../src/main.prod.js');
 const ConfigWindow = getRendererPath('ConfigWindow');
 const MonitorWindow = getRendererPath('MonitorWindow');
+const TrendWindow = getRendererPath('TrendWindow');
 
 if (!fs.existsSync(mainPath)) {
   throw new Error(
@@ -24,6 +25,14 @@ if (!fs.existsSync(ConfigWindow)) {
 }
 
 if (!fs.existsSync(MonitorWindow)) {
+  throw new Error(
+    chalk.whiteBright.bgRed.bold(
+      'The MonitorWindow renderer process is not built yet. Build it by running "yarn build:renderer"'
+    )
+  );
+}
+
+if (!fs.existsSync(TrendWindow)) {
   throw new Error(
     chalk.whiteBright.bgRed.bold(
       'The MonitorWindow renderer process is not built yet. Build it by running "yarn build:renderer"'

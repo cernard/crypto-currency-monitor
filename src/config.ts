@@ -3,7 +3,11 @@ const config = {
   winMonitorHeight: 50,
 
   winConfigWidth: 250,
-  winConfigHeight: 380
+  winConfigHeight: 380,
+
+  winTrendWidth: 250,
+  winTrendHeight: 80,
+  pairs: []
 };
 
 export default config;

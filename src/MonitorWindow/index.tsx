@@ -31,8 +31,8 @@ document.addEventListener('mouseup', () => {
 });
 
 const moveEvent = (e: MouseEvent) => {
-  const [width, height] = win.getSize();
-  win.setBounds({ x: e.screenX - biasX, y: e.screenY - biasY, width: width, height: height })
+  win.setBounds({ x: e.screenX - biasX, y: e.screenY - biasY, width: config.winMonitorWidth, height: config.winMonitorHeight })
+  // win.setPosition(e.screenX - biasX, e.screenY - biasY)
 }
 
 render(<Monitor />, document.getElementById('root'));

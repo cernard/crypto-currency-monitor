@@ -4,6 +4,7 @@ import { Link, Redirect } from 'react-router-dom';
 import styles from './style.css';
 import setting_icon from '../../assets/setting.svg';
 import '../App.global.css';
+import config from '../config';
 
 const api = 'https://api.binance.com/api/v3/avgPrice?symbol='
 
@@ -13,24 +14,44 @@ const win = remote.getCurrentWindow();
 class Monitor extends Component {
   state = {
     monitor: [
-      {
-        label: 'BTC',
-        unit: 'USDT',
-        avgPrice: '',
-        moneySymbol: '$'
-      },
-      {
-        label: 'ETH',
-        unit: 'USDT',
-        avgPrice: '',
-        moneySymbol: '$'
-      }
     ]
-  }
+  };
+
+  priceIntervals = [];
 
   componentDidMount() {
-    const { monitor } = this.state;
-    monitor.forEach(info => setInterval(() => this.updatePrice(info.label, info.unit), 1000));
+    ipcRenderer.send('loadConfig');
+    ipcRenderer.on('reciveConfig', (_, args) => {
+      const configJson = JSON.parse(args);
+      if (configJson['pairs'] == null) {
+        this.setState({...this.state, monitor: [] });
+      } else {
+        const monitor = [];
+        configJson['pairs'].forEach(pair => {
+          const symbol = pair.split('/')[0];
+          const unit = pair.split('/')[1];
+          if (symbol && unit) {
+            monitor.push({
+              label: symbol,
+              unit: unit,
+              avgPrice: 0,
+              moneySymbol: '$'
+            })
+          }
+        });
+        this.setState({...this.state, monitor});
+      }
+    });
+  }
+
+  shouldComponentUpdate(props, state) {
+    this.priceIntervals.forEach(intervalHandle => clearInterval(intervalHandle));
+    this.priceIntervals = [];
+    state.monitor.forEach(info => {
+      const intervalHandle = setInterval(() => this.updatePrice(info.label, info.unit), 1000);
+      this.priceIntervals.push(intervalHandle);
+    });
+    return true;
   }
 
   updatePrice = (label: string, unit: String) => {
@@ -46,14 +67,10 @@ class Monitor extends Component {
     });
   }
 
-  navigateToSetting = () => {
-    ipcRenderer.send('showConfigWindow');
-  }
-
   render() {
     const { monitor = [] } = this.state;
-    const [width, _] = win.getSize();
-    win.setSize(width, 40 * this.state.monitor.length + 10);
+    config.winMonitorHeight = 40 * this.state.monitor.length + 10;
+    win.setSize(config.winMonitorWidth, config.winMonitorHeight);
     return (
       <div className={styles['box']}>
         <img className={styles['setting-icon']} src={setting_icon} onClick={this.navigateToSetting} />

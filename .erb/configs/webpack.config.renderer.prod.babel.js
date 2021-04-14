@@ -32,6 +32,7 @@ export default merge(baseConfig, {
     'regenerator-runtime/runtime',
     path.join(__dirname, '../../src/ConfigWindow/index.tsx'),
     path.join(__dirname, '../../src/MonitorWindow/index.tsx'),
+    path.join(__dirname, '../../src/TrendWindow/index.tsx')
   ],
 
   output: {
