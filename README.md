@@ -35,7 +35,7 @@ The trend window will be shown when the mouse moves over the suspension monitor.
 
 <img src='./images/trend.png'>
 
-## Some hards for me
+## Some hards for me :broken_heart:
 
-I'm new to electron...I can't generate a normal installation package...?
-If you are familiar with electron and react, help me please.?
+I'm new to electron...I can't generate a normal installation package... :sob:
+If you are familiar with electron and react, help me please. :joy:
