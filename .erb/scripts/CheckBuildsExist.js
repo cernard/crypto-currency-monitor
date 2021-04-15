@@ -3,7 +3,7 @@ import path from 'path';
 import chalk from 'chalk';
 import fs from 'fs';
 
-const mainPath = path.join(__dirname, '../../src/main.prod.js');
+// const mainPath = path.join(__dirname, '../../src/main.prod.js');
 const ConfigWindow = getRendererPath('ConfigWindow');
 const MonitorWindow = getRendererPath('MonitorWindow');
 const TrendWindow = getRendererPath('TrendWindow');

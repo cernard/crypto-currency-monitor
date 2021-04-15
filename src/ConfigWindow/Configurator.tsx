@@ -1,7 +1,7 @@
 import React from 'react';
 import { Component } from 'react';
 import { Link, Redirect } from 'react-router-dom';
-import styles from './style.css';
+import styles from './ConfiguratorStyle.css';
 import config from '../config';
 import '../App.global.css';
 import delete_icon from '../../assets/delete.svg'

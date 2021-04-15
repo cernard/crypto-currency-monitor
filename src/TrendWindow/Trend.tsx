@@ -1,6 +1,6 @@
 import React from 'react';
 import { Component } from 'react';
-import styles from './style.css';
+import styles from './TrendStyle.css';
 import '../App.global.css';
 import config from '../config';
 import ReactECharts from 'echarts-for-react';
@@ -137,8 +137,10 @@ class Trend extends Component {
 
   updateTrend = (pair: string) => {
     let option = JSON.parse(JSON.stringify(this.state.option));
-
-    fetch(kLineDataAPI + '?symbol=' + pair.toUpperCase().replace('/', '') + '&interval=1h' + '&startTime=1618326000000' + '&endTime=1618416000000')
+    const now = Date.now();
+    const OneHourAgo = now - 86400000;
+    console.log(OneHourAgo)
+    fetch(kLineDataAPI + '?symbol=' + pair.toUpperCase().replace('/', '') + '&interval=1h' + `&startTime=${1618045200000}&endTime=${now}`)
     .then(rep => rep.json())
     .then(data => {
       option.xAxis.data = data.map(d => 0);
@@ -179,7 +181,7 @@ class Trend extends Component {
     const { option = {}, price, changePercentIn24H } = this.state;
     return (
       <div className={styles['box']}>
-        <div className={styles['title']}>Last 1H Trend</div>
+        <div className={styles['title']}>Last 24H Trend</div>
         <ReactECharts option={option} className={styles['trend-chart']}/>
         <div className={styles['info-bar']}>
           <span>

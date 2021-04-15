@@ -1,7 +1,7 @@
 import React from 'react';
 import { Component } from 'react';
 import { Link, Redirect } from 'react-router-dom';
-import styles from './style.css';
+import styles from './MonitorStyle.css';
 import setting_icon from '../../assets/setting.svg';
 import '../App.global.css';
 import config from '../config';
