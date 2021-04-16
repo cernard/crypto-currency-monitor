@@ -62,7 +62,21 @@ class Monitor extends Component {
       const monitor = this.state.monitor.slice();
       const origin = monitor.find(info => info.label === label && info.unit === unit);
       if (origin) {
-        origin.avgPrice = parseFloat(data['price']).toFixed(0);
+        let price = data['price'];
+        let fixedIndex = 0;
+
+        if (parseFloat(price) < 1 && parseFloat(price) >= 0) {
+          for(let i = 0; i <= price.length; i++) {
+            if (price[i] !== '0') {
+              fixedIndex = i;
+              break;
+            }
+          }
+
+        }
+        price = parseFloat(price).toFixed(fixedIndex);
+
+        origin.avgPrice = price;
         this.setState({...this.state, monitor});
       }
     });

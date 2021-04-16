@@ -130,7 +130,20 @@ class Trend extends Component {
     fetch(avgPriceAPI + '?symbol=' + pair.toUpperCase().replace('/', ''))
     .then(rep => rep.json())
     .then(data => {
-      this.setState({price: parseFloat(data['price']).toFixed(0)});
+      let price = data['price'];
+      let fixedIndex = 0;
+
+      if (parseFloat(price) < 1 && parseFloat(price) >= 0) {
+        for(let i = 0; i <= price.length; i++) {
+          if (price[i] !== '0') {
+            fixedIndex = i;
+            break;
+          }
+        }
+
+      }
+      price = parseFloat(price).toFixed(fixedIndex);
+      this.setState({price: price});
     })
     .catch(e => console.log(e));
   }
