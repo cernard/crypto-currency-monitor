@@ -1,7 +1,7 @@
 import React from 'react';
 import { Component } from 'react';
-import styles from './TrendStyle.css';
 import '../App.global.css';
+import './TrendStyle.css';
 import config from '../config';
 import ReactECharts from 'echarts-for-react';
 import * as echarts from 'echarts';

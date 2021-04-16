@@ -1,6 +1,6 @@
 import React from 'react';
 import { Component } from 'react';
-import setting_icon from '../../assets/setting.svg';
+// import setting_icon from '../../assets/setting.svg';
 import '../App.global.css';
 import './MonitorStyle.css';
 import config from '../config';
@@ -98,7 +98,7 @@ class Monitor extends Component {
     // win.setSize(config.winMonitorWidth, config.winMonitorHeight);
     return (
       <div className='box'>
-        <img className='setting-icon' src={setting_icon} onClick={this.navigateToSetting} />
+        <img className='setting-icon' src='../../assets/setting.svg' onClick={this.navigateToSetting} />
         {
           monitor.map(item => (
             <>

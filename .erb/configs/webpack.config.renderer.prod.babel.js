@@ -38,12 +38,12 @@ export default merge(baseConfig, {
     MonitorWindow: [
       'core-js',
       'regenerator-runtime/runtime',
-      path.join(__dirname, '../../src/ConfigWindow/index.tsx')
+      path.join(__dirname, '../../src/MonitorWindow/index.tsx')
     ],
     ConfigWindow: [
       'core-js',
       'regenerator-runtime/runtime',
-      path.join(__dirname, '../../src/MonitorWindow/index.tsx')
+      path.join(__dirname, '../../src/ConfigWindow/index.tsx')
     ],
     TrendWindow: [
       'core-js',

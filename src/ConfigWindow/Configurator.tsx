@@ -3,7 +3,6 @@ import { Component } from 'react';
 import config from '../config';
 import '../App.global.css';
 import './ConfiguratorStyle.css';
-import delete_icon from '../../assets/delete.svg'
 
 const { ipcRenderer } = require('electron');
 class Monitor extends Component {
@@ -73,7 +72,7 @@ class Monitor extends Component {
               <>
               <div className='pair-item'>
                 <span className='pair'>{pair}</span>
-                <img className='delete-icon' src={delete_icon} onClick={() => this.deletePair(pair)}/>
+                <img className='delete-icon' src='../../assets/delete.svg' onClick={() => this.deletePair(pair)}/>
               </div>
               <div className='line'/>
               </>

@@ -19,6 +19,9 @@ import config from './config';
 import { IpcMainEvent } from 'electron/main';
 
 const fs = require('fs')
+
+const configPath = path.join("/Users/chenxiaoxiong/config.json");
+
 export default class AppUpdater {
   constructor() {
     log.transports.file.level = 'info';
@@ -249,6 +252,7 @@ app.on('activate', () => {
 });
 
 ipcMain.on('showConfigWindow', () => {
+  configWindow.webContents.openDevTools();
   configWindow?.show()
   configWindow?.focus()
 });
@@ -260,6 +264,7 @@ ipcMain.on('hideConfigWindow', () => {
 ipcMain.on('showTrendWindow', (event: IpcMainEvent, args: any) => {
   trendWindow?.webContents.send('updatePair', args);
   const [x, y] = monitorWindow?.getPosition();
+  trendWindow.webContents.openDevTools();
   trendWindow?.setPosition(x, y - config.winTrendHeight - 10);
   trendWindow?.show()
   trendWindow?.focus()
@@ -271,7 +276,6 @@ ipcMain.on('hideTrendWindow', () => {
 });
 
 ipcMain.on('loadConfig', (event) => {
-  const configPath = path.join(__dirname,"../config.json");
   fs.readFile(configPath,"utf8", (err: any, data: any) => {
     if (err) {
       fs.writeFile(configPath, JSON.stringify(config), "utf8", (err) => {
@@ -279,7 +283,7 @@ ipcMain.on('loadConfig', (event) => {
           type:'error',
           title: "Error",
           message: `Can't write config data to disk. ${err}`,
-          //点击后返回数组下�?
+          //点击后返回数组下�??
           buttons:['Ok']
         })
       });
@@ -291,14 +295,13 @@ ipcMain.on('loadConfig', (event) => {
 });
 
 ipcMain.on('saveConfig', (event, args) => {
-  const configPath = path.join(__dirname,"../config.json");
   fs.writeFile(configPath, JSON.stringify(args), "utf8", (err) => {
     if (err) {
       dialog.showMessageBox({
         type:'error',
         title: "Error",
         message: `Can't write config data to disk. ${err}`,
-        //点击后返回数组下�?
+        //点击后返回数组下�??
         buttons:['Ok']
       })
     }
