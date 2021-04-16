@@ -27,30 +27,30 @@ export default merge(baseConfig, {
 
   target: 'electron-renderer',
 
-  entry: [
-    'core-js',
-    'regenerator-runtime/runtime',
-    path.join(__dirname, '../../src/ConfigWindow/index.tsx'),
-    path.join(__dirname, '../../src/MonitorWindow/index.tsx'),
-    path.join(__dirname, '../../src/TrendWindow/index.tsx')
-  ],
-  // entry: {
-  //   MonitorWindow: [
-  //     'core-js',
-  //     'regenerator-runtime/runtime',
-  //     path.join(__dirname, '../../src/ConfigWindow/index.tsx')
-  //   ],
-  //   ConfigWindow: [
-  //     'core-js',
-  //     'regenerator-runtime/runtime',
-  //           path.join(__dirname, '../../src/MonitorWindow/index.tsx')
-  //   ],
-  //   TrendWindow: [
-  //     'core-js',
-  //     'regenerator-runtime/runtime',
-  //     path.join(__dirname, '../../src/TrendWindow/index.tsx')
-  //   ]
-  // },
+  // entry: [
+  //   'core-js',
+  //   'regenerator-runtime/runtime',
+  //   path.join(__dirname, '../../src/ConfigWindow/index.tsx'),
+  //   path.join(__dirname, '../../src/MonitorWindow/index.tsx'),
+  //   path.join(__dirname, '../../src/TrendWindow/index.tsx')
+  // ],
+  entry: {
+    MonitorWindow: [
+      'core-js',
+      'regenerator-runtime/runtime',
+      path.join(__dirname, '../../src/ConfigWindow/index.tsx')
+    ],
+    ConfigWindow: [
+      'core-js',
+      'regenerator-runtime/runtime',
+      path.join(__dirname, '../../src/MonitorWindow/index.tsx')
+    ],
+    TrendWindow: [
+      'core-js',
+      'regenerator-runtime/runtime',
+      path.join(__dirname, '../../src/TrendWindow/index.tsx')
+    ]
+  },
 
   output: {
     path: path.join(__dirname, '../../src/dist'),
@@ -143,7 +143,7 @@ export default merge(baseConfig, {
   },
 
   optimization: {
-    minimize: true,
+    minimize: false,
     minimizer:
       [
         new TerserPlugin({
@@ -169,7 +169,7 @@ export default merge(baseConfig, {
     }),
 
     new MiniCssExtractPlugin({
-      filename: 'style.css',
+      filename: '[name].style.css',
     }),
 
     new BundleAnalyzerPlugin({

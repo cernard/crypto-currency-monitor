@@ -8,7 +8,7 @@
         if (process?.env?.NODE_ENV !== 'development') {
           const link = document.createElement('link');
           link.rel = 'stylesheet';
-          link.href = './dist/ConfigWindow.css';
+          link.href = '../dist/ConfigWindow.style.css';
           // HACK: Writing the script path should be done with webpack
           document.getElementsByTagName('head')[0].appendChild(link);
         }
@@ -31,7 +31,7 @@
           `http://localhost:${port}/dist/ConfigWindow.renderer.dev.js`
         );
       } else {
-        scripts.push('./dist/ConfigWindow.renderer.prod.js');
+        scripts.push('../dist/ConfigWindow.renderer.prod.js');
       }
 
       if (scripts.length) {

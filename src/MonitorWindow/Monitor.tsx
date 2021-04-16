@@ -1,16 +1,13 @@
 import React from 'react';
 import { Component } from 'react';
-import { Link, Redirect } from 'react-router-dom';
-import styles from './MonitorStyle.css';
 import setting_icon from '../../assets/setting.svg';
 import '../App.global.css';
+import './MonitorStyle.css';
 import config from '../config';
 
 const api = 'https://api.binance.com/api/v3/avgPrice?symbol='
 
-const { remote, ipcRenderer } = require('electron');
-const win = remote.getCurrentWindow();
-
+const { ipcRenderer } = require('electron');
 class Monitor extends Component {
   state = {
     monitor: [
@@ -98,24 +95,24 @@ class Monitor extends Component {
   render() {
     const { monitor = [] } = this.state;
     config.winMonitorHeight = 40 * this.state.monitor.length + 8 * this.state.monitor.length;
-    win.setSize(config.winMonitorWidth, config.winMonitorHeight);
+    // win.setSize(config.winMonitorWidth, config.winMonitorHeight);
     return (
-      <div className={styles['box']}>
-        <img className={styles['setting-icon']} src={setting_icon} onClick={this.navigateToSetting} />
+      <div className='box'>
+        <img className='setting-icon' src={setting_icon} onClick={this.navigateToSetting} />
         {
           monitor.map(item => (
             <>
               <div
-              className={styles['item']}
+              className='item'
               onMouseDown={() => this.showTrendWindow(item.label + '/' + item.unit)}
               onMouseUp={() => this.hideTrendWindow()}
               >
-                <span className={styles['symbol']}>{item.label}</span>
-                <span className={styles['symbolUnit']}>/{item.unit}</span>
-                <span className={styles['price']}>{item.avgPrice}</span>
-                <span className={styles['money-symbol']}>{item.moneySymbol}</span>
+                <span className='symbol'>{item.label}</span>
+                <span className='symbolUnit'>/{item.unit}</span>
+                <span className='price'>{item.avgPrice}</span>
+                <span className='money-symbol'>{item.moneySymbol}</span>
               </div>
-              <div className={styles['line']}/>
+              <div className='line'/>
             </>
           ))
         }

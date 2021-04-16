@@ -1,6 +1,6 @@
 const config = {
   winMonitorWidth: 250,
-  winMonitorHeight: 50,
+  winMonitorHeight: 500,
 
   winConfigWidth: 250,
   winConfigHeight: 380,

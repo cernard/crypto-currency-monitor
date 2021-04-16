@@ -149,6 +149,7 @@ const createWindow = async () => {
     if (process.env.START_MINIMIZED) {
       monitorWindow.minimize();
     } else {
+      monitorWindow.webContents.openDevTools();
       monitorWindow.show();
       monitorWindow.focus();
     }
@@ -278,7 +279,7 @@ ipcMain.on('loadConfig', (event) => {
           type:'error',
           title: "Error",
           message: `Can't write config data to disk. ${err}`,
-          //点击后返回数组下�?
+          //点击后返回数组下�?
           buttons:['Ok']
         })
       });
@@ -297,7 +298,7 @@ ipcMain.on('saveConfig', (event, args) => {
         type:'error',
         title: "Error",
         message: `Can't write config data to disk. ${err}`,
-        //点击后返回数组下�?
+        //点击后返回数组下�?
         buttons:['Ok']
       })
     }

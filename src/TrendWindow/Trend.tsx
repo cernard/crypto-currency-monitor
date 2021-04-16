@@ -193,15 +193,15 @@ class Trend extends Component {
   render() {
     const { option = {}, price, changePercentIn24H } = this.state;
     return (
-      <div className={styles['box']}>
-        <div className={styles['title']}>Last 24H Trend</div>
-        <ReactECharts option={option} className={styles['trend-chart']}/>
-        <div className={styles['info-bar']}>
+      <div className='box'>
+        <div className='title'>Last 24H Trend</div>
+        <ReactECharts option={option} className='trend-chart'/>
+        <div className='info-bar'>
           <span>
-            <span className={styles['info-bar-price']}>{price}</span>
+            <span className='info-bar-price'>{price}</span>
             <span>$</span>
           </span>
-          <span className={styles['info-bar-upanddown']} style={{color: changePercentIn24H.indexOf('-') >= 0 ? 'rgb(231, 90, 112)': 'rgba(41, 209, 143, 100)'}}>{changePercentIn24H}</span>
+          <span className='info-bar-upanddown' style={{color: changePercentIn24H.indexOf('-') >= 0 ? 'rgb(231, 90, 112)': 'rgba(41, 209, 143, 100)'}}>{changePercentIn24H}</span>
         </div>
       </div>
     );

@@ -1,14 +1,11 @@
 import React from 'react';
 import { Component } from 'react';
-import { Link, Redirect } from 'react-router-dom';
-import styles from './ConfiguratorStyle.css';
 import config from '../config';
 import '../App.global.css';
+import './ConfiguratorStyle.css';
 import delete_icon from '../../assets/delete.svg'
 
-const { remote, ipcRenderer } = require('electron');
-const win = remote.getCurrentWindow();
-
+const { ipcRenderer } = require('electron');
 class Monitor extends Component {
   state = {
     pairs: []
@@ -62,23 +59,23 @@ class Monitor extends Component {
   render() {
     const { pairs } = this.state;
     return (
-      <div className={styles['container']}>
-        <div className={styles['title']}>Add Pair
-          <span className={styles['close-btn']} onClick={this.close}/>
+      <div className='container'>
+        <div className='title'>Add Pair
+          <span className='close-btn' onClick={this.close}/>
         </div>
-        <div className={styles['input-box']}>
-          <input className={styles['input']} ref='pairInput'/>
-          <div className={styles['add-btn']} onClick={this.addPair}>Add</div>
+        <div className='input-box'>
+          <input className='input' ref='pairInput'/>
+          <div className='add-btn' onClick={this.addPair}>Add</div>
         </div>
-        <div className={styles['pair-list']}>
+        <div className='pair-list'>
           {
             pairs.map(pair => (
               <>
-              <div className={styles['pair-item']}>
-                <span className={styles['pair']}>{pair}</span>
-                <img className={styles['delete-icon']} src={delete_icon} onClick={() => this.deletePair(pair)}/>
+              <div className='pair-item'>
+                <span className='pair'>{pair}</span>
+                <img className='delete-icon' src={delete_icon} onClick={() => this.deletePair(pair)}/>
               </div>
-              <div className={styles['line']}/>
+              <div className='line'/>
               </>
             ))
           }
