@@ -1,12 +1,12 @@
-# Digital currency monitor
+# Crypto currency monitor
 
-Pure digital currency monitor
+Pure crypto currency monitor
 
 ## Starting Development
 
 ```shell
-git clone https://github.com/cernard/Digital-currency-monitor.git
-cd Digital-currency-monitor
+git clone https://github.com/cernard/crypto-currency-monitor.git
+cd crypto-currency-monitor
 yarn
 yarn start
 ```
