@@ -2,6 +2,8 @@
 
 Pure crypto currency monitor
 
+> For some reasons, some reigns user may need special Internet access method to use this program normally.
+
 ## Starting Development
 
 ```shell
