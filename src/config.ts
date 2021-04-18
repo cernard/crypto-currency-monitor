@@ -6,8 +6,9 @@ const config = {
   winConfigHeight: 380,
 
   winTrendWidth: 250,
-  winTrendHeight: 80,
-  pairs: []
+  winTrendHeight: 100,
+
+  PAIRS: 'pairs'
 };
 
 export default config;

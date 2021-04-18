@@ -5,6 +5,7 @@
   display: flex;
   flex-direction: row;
   justify-content: center;
+  align-items: center;
   flex-wrap: wrap;
 }
 
@@ -58,4 +59,17 @@
 
 .setting-icon:hover {
   transform: rotate(90deg);
+}
+
+.blank {
+  color: rgba(238, 205, 73, 100);
+  align-self: center;
+  display: flex;
+  align-items: center;
+}
+
+.blank-icon {
+  width: 16px;
+  height: 16px;
+  margin-right: 6.18px;
 }

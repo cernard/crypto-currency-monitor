@@ -69,7 +69,7 @@ body {
 
 .add-btn {
   display: inline-flex;
-  background-color: #33bf7f;
+  background-color: #cca91e;
   justify-content: center;
   align-items: center;
   width: 61px;
@@ -78,11 +78,11 @@ body {
 }
 
 .add-btn:hover {
-  background-color: #29a06b;
+  background-color: #967802;
 }
 
 .add-btn:active {
-  background-color: #1b6d48;
+  background-color: #5e4b00;
 }
 
 .pair-list {

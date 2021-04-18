@@ -3,11 +3,18 @@ import { Component } from 'react';
 import config from '../config';
 import '../App.global.css';
 import './ConfiguratorStyle.css';
+import { Pair, Currency } from '../Entities';
+import log from 'electron-log';
+import Store from 'electron-store';
+import { remote, ipcRenderer } from 'electron';
 
-const { ipcRenderer } = require('electron');
-class Monitor extends Component {
+const store = new Store();
+const { dialog: { showMessageBox } } = remote;
+
+class Configurator extends Component {
   state = {
-    pairs: []
+    pairs: [],
+    pair: ''
   }
 
   constructor(props) {
@@ -17,13 +24,9 @@ class Monitor extends Component {
 
   componentDidMount() {
     ipcRenderer.send('loadConfig');
-    ipcRenderer.on('reciveConfig', (_, args) => {
-      const configJson = JSON.parse(args);
-      if (configJson['pairs'] == null) {
-        this.setState({...this.state, pairs: [] });
-      } else {
-        this.setState({...this.state, pairs: configJson['pairs']});
-      }
+    ipcRenderer.on('wakeup', () => {
+      const pairs: Pair[] = store.get(config.PAIRS);
+      this.setState({...this.state, pairs});
     });
   }
 
@@ -31,47 +34,75 @@ class Monitor extends Component {
     ipcRenderer.send('hideConfigWindow');
   }
 
-  addPair = () => {
-    const pair: string = this.refs.pairInput.value;
-
-    const pairs: string[] = this.state.pairs.slice();
-    if (!pairs.includes(pair)) {
-      pairs.push(pair);
+  pairFormatCheck = (pair: string): boolean => {
+    const slashCount = pair.split('').filter(c => c === '/').length;
+    if (slashCount !== 1) {
+      return false;
     }
-    this.setState({...this.state, pairs}, () => console.log('state', this.state));
-
-    config.pairs = pairs;
-    ipcRenderer.send('saveConfig', config);
-    this.refs.pairInput.value = "";
+    return true;
   }
 
-  deletePair = (pair: string) => {
-    let pairs: string[] = this.state.pairs.slice();
+  addPair = () => {
+    const { pair } = this.state;
+
+    // check input string is correct or not.
+    if (!this.pairFormatCheck(pair)) {
+      showMessageBox({
+        type:'error',
+        title: "Error",
+        message: 'Please enter the correct pair format. \nFor example: BTC/USDT, ETH/USDT',
+        buttons:['Retry']
+      });
+      return;
+    }
+
+    const pairs: Pair[] = this.state.pairs.slice();
+    if (!pairs.map(_pair => `${_pair.secondaryCurrency}/${_pair.baseCurrency}`).includes(pair)) {
+      const secondaryCurrency = pair.split('/')[0];
+      const baseCurrency = pair.split('/')[1];
+
+      const newPair = new Pair(secondaryCurrency, baseCurrency);
+      const newCurrency = new Currency(newPair);
+      store.set(newPair.pair, newCurrency)
+      pairs.push(newPair);
+    }
+    this.setState({...this.state, pairs, pair: ''});
+
+    store.set(config.PAIRS, pairs);
+
+    ipcRenderer.send('updateConfig');
+  }
+
+  deletePair = (pair: Pair) => {
+    let pairs: Pair[] = this.state.pairs.slice();
     const pairIndex: number = pairs.indexOf(pair);
     pairs.splice(pairIndex, 1);
     this.setState({...this.state, pairs});
 
-    config.pairs = pairs;
-    ipcRenderer.send('saveConfig', config);
+    store.set(config.PAIRS, pairs);
+  }
+
+  onInputChange = ({target: { value = '' }}) => {
+    this.setState({pair: value.toUpperCase()});
   }
 
   render() {
-    const { pairs } = this.state;
+    const { pairs, pair } = this.state;
     return (
       <div className='container'>
         <div className='title'>Add Pair
           <span className='close-btn' onClick={this.close}/>
         </div>
         <div className='input-box'>
-          <input className='input' ref='pairInput'/>
+          <input className='input' placeholder='e.g. BTC/USDT' value={pair} onChange={this.onInputChange}/>
           <div className='add-btn' onClick={this.addPair}>Add</div>
         </div>
         <div className='pair-list'>
           {
-            pairs.map(pair => (
+            pairs.map((pair: Pair) => (
               <>
               <div className='pair-item'>
-                <span className='pair'>{pair}</span>
+                <span className='pair'>{pair.secondaryCurrency}/{pair.baseCurrency}</span>
                 <img className='delete-icon' src='../../assets/delete.svg' onClick={() => this.deletePair(pair)}/>
               </div>
               <div className='line'/>
@@ -84,4 +115,4 @@ class Monitor extends Component {
   }
 }
 
-export default Monitor;
+export default Configurator;

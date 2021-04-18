@@ -17,10 +17,16 @@ import log from 'electron-log';
 import MenuBuilder from './menu';
 import config from './config';
 import { IpcMainEvent } from 'electron/main';
+import { Currency, KData, Pair } from './Entities';
+import fs from 'fs';
+import os from 'os';
+import Store from 'electron-store';
+import fetch from 'electron-fetch';
+import SyncQueue from './SyncQueue';
 
-const fs = require('fs')
+const store = new Store();
 
-const configPath = path.join("/Users/chenxiaoxiong/config.json");
+const configPath = path.join(os.homedir(), "../config.json");
 
 export default class AppUpdater {
   constructor() {
@@ -152,7 +158,7 @@ const createWindow = async () => {
     if (process.env.START_MINIMIZED) {
       monitorWindow.minimize();
     } else {
-      monitorWindow.webContents.openDevTools();
+      // monitorWindow.webContents.openDevTools();
       monitorWindow.show();
       monitorWindow.focus();
     }
@@ -251,8 +257,12 @@ app.on('activate', () => {
   if (monitorWindow === null || configWindow === null || trendWindow === null) createWindow();
 });
 
+/**
+ * Add IPC listeners
+ */
+
 ipcMain.on('showConfigWindow', () => {
-  configWindow.webContents.openDevTools();
+  // configWindow.webContents.openDevTools();
   configWindow?.show()
   configWindow?.focus()
 });
@@ -261,10 +271,10 @@ ipcMain.on('hideConfigWindow', () => {
   configWindow?.hide()
 });
 
-ipcMain.on('showTrendWindow', (event: IpcMainEvent, args: any) => {
-  trendWindow?.webContents.send('updatePair', args);
+ipcMain.on('showTrendWindow', (_, pair: Pair) => {
+  trendWindow?.webContents.send('updatePair', pair);
   const [x, y] = monitorWindow?.getPosition();
-  trendWindow.webContents.openDevTools();
+  // trendWindow.webContents.openDevTools();
   trendWindow?.setPosition(x, y - config.winTrendHeight - 10);
   trendWindow?.show()
   trendWindow?.focus()
@@ -275,37 +285,134 @@ ipcMain.on('hideTrendWindow', () => {
   trendWindow?.hide()
 });
 
-ipcMain.on('loadConfig', (event) => {
-  fs.readFile(configPath,"utf8", (err: any, data: any) => {
-    if (err) {
-      fs.writeFile(configPath, JSON.stringify(config), "utf8", (err) => {
-        dialog.showMessageBox({
-          type:'error',
-          title: "Error",
-          message: `Can't write config data to disk. ${err}`,
-          //点击后返回数组下�??
-          buttons:['Ok']
-        })
-      });
-      event.reply('reciveConfig', JSON.stringify(config))
-    } else {
-      event.reply('reciveConfig', data)
-    }
-  });
+ipcMain.on('updateConfig', () => {
+  monitorWindow?.webContents.send('wakeup');
 });
+/**
+ * Notify to all
+ */
+const notifyAll = () => {
+  monitorWindow?.webContents.send('wakeup');
+  trendWindow?.webContents.send('wakeup');
+  configWindow?.webContents.send('wakeup');
+}
 
-ipcMain.on('saveConfig', (event, args) => {
-  fs.writeFile(configPath, JSON.stringify(args), "utf8", (err) => {
-    if (err) {
-      dialog.showMessageBox({
-        type:'error',
-        title: "Error",
-        message: `Can't write config data to disk. ${err}`,
-        //点击后返回数组下�??
-        buttons:['Ok']
+/**
+ * Timing tasks
+ * Share data between the different windows.
+ */
+const PAIRS: string = config.PAIRS;
+let waitLock = false;
+const taskQueue: SyncQueue = new SyncQueue();
+const priceChangeIn24HQueue: SyncQueue = new SyncQueue();
+
+// if api response error, wait 2s.
+const wait = () => {
+  waitLock = true;
+  setTimeout(() => {waitLock = false}, 2000);
+}
+/*
+// Update average transaction price
+const avgPriceAPI = 'https://api.binance.com/api/v3/avgPrice'
+
+// Follow line is used for test
+store.set(PAIRS, [new Pair('BTC')])
+
+// Start timing task by default
+setInterval(() => {
+  if (!waitLock) {
+    const pairs: Pair[] = store.get(PAIRS) ?? [];
+
+    pairs.forEach(pair => taskQueue.add(() => {
+      fetch(avgPriceAPI + `?symbol=${pair.pair}`)
+      .then(rep => rep.json())
+      .then(data => {
+        // Get currency obj from store, if currency is not defined, pass a new currency instrance and save it.
+        const currency: Currency = store.get(pair.pair) ?? new Currency(pair);
+        currency.avgPrice = parseFloat(data['price']);
+        store.set(pair.pair, currency);
+
+        notifyAll();
       })
-    }
-  });
-  monitorWindow?.webContents.send('reciveConfig', JSON.stringify(args));
-  configWindow?.webContents.send('reciveConfig', JSON.stringify(args));
-});
+      .catch(err => {
+        // if fetch got error, print it and wait 2000 second, because of binance has limited api request frequency.
+        log.error(err);
+        wait();
+      })
+    }));
+  }
+}, 2000);
+ */
+// Update K line data in past 24 hours
+const kLineDataAPI: string = 'https://api.binance.com/api/v3/klines';
+const interval: string = '1h';
+const endTime: number = Date.now();
+const startTime: number = endTime - 86400000 // 24h ago
+
+// Start timing task by default
+setInterval(() => {
+  if (!waitLock) {
+    const pairs: Pair[] = store.get(PAIRS) ?? [];
+
+    pairs.forEach(pair => taskQueue.add(() => {
+      fetch(`${kLineDataAPI}?symbol=${pair.pair}&interval=${interval}&startTime=${startTime}&endTime=${endTime}`)
+      .then(rep => rep.json())
+      .then((data: any) => {
+        if (data['code']) {
+          throw new Error(data['msg']);
+        }
+        // Get currency obj from store, if currency is not defined, pass a new currency instrance and save it.
+        const currency: Currency = store.get(pair.pair) ?? new Currency(pair);
+        const x: string[] = [];
+        const y: number[] = [];
+        data.forEach((item: any) => {
+          x.push(item[0]); // Opening time
+          y.push(parseFloat(item[1])) // Opening price
+        });
+        const kData: KData = new KData(x, y);
+        currency.kData = kData;
+        store.set(pair.pair, currency);
+
+        notifyAll();
+      })
+      .catch(err => {
+        // if fetch got error, print it and wait 2000 second, because of binance has limited api request frequency.
+        log.error(err);
+        wait();
+      })
+    }));
+  }
+}, 2000);
+
+// Update the price changed compare with the last day.
+const priceChangeIn24HAPI = 'https://api.binance.com/api/v3/ticker/24hr';
+// Start timing task by default
+setInterval(() => {
+  if (!waitLock) {
+    const pairs: Pair[] = store.get(PAIRS) ?? [];
+
+    pairs.forEach((pair: Pair) => priceChangeIn24HQueue.add(() => {
+      fetch(`${priceChangeIn24HAPI}?symbol=${pair.pair}`)
+      .then(rep => rep.json())
+      .then((data) => {
+        if (data['code']) {
+          throw new Error(data['msg']);
+        }
+        // Get currency obj from store, if currency is not defined, pass a new currency instrance and save it.
+        const currency: Currency = store.get(pair.pair) ?? new Currency(pair);
+        currency.priceChangePrecentIn24H = data['priceChangePercent'];
+        currency.volume = parseFloat(data['volume']);
+        currency.avgPrice = parseFloat(data['lastPrice'])
+        store.set(pair.pair, currency);
+
+        notifyAll();
+      })
+      .catch(err => {
+        // if fetch got error, print it and wait 2000 second, because of binance has limited api request frequency.
+        log.error(err);
+        wait();
+      });
+    }));
+  }
+}, 2000);
+
