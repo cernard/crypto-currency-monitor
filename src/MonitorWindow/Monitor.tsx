@@ -8,6 +8,8 @@ import { ipcRenderer, remote } from 'electron';
 import { Pair, Currency } from '../Entities';
 import log, { info } from 'electron-log';
 import Store from 'electron-store';
+import Trend from '../TrendWindow/Trend';
+import { TrendMode } from '../Enums';
 
 const store = new Store();
 const win = remote.getCurrentWindow();
@@ -34,9 +36,9 @@ class Monitor extends Component {
 
     // resize with monitor currency count;
     if (this.state.currencies.length === 0) {
-      config.winMonitorHeight = 50;
+      config.winMonitorHeight = 40;
     } else {
-      config.winMonitorHeight = 50 * currencies.length;
+      config.winMonitorHeight = 35 * currencies.length;
     }
     win.setSize(config.winMonitorWidth, config.winMonitorHeight);
     return true;
@@ -59,7 +61,8 @@ class Monitor extends Component {
     const { currencies = [] } = this.state;
     return (
       <div className='box'>
-        <img className='setting-icon' src='../../assets/setting.svg' onClick={this.navigateToSetting} />
+        {/* <img className='setting-icon' src='../../assets/setting.svg' onClick={this.navigateToSetting} /> */}
+        <div className='setting-handle' onClick={this.navigateToSetting} />
         {
           currencies && currencies.length >= 1 ? currencies.map((currency: Currency) => (
             <>
@@ -69,10 +72,13 @@ class Monitor extends Component {
               onMouseDown={() => this.showTrendWindow(currency.pair)}
               onMouseUp={() => this.hideTrendWindow()}
               >
-                <span className='symbol'>{currency.pair.secondaryCurrency}</span>
-                <span className='symbolUnit'>/{currency.pair.baseCurrency}</span>
-                <span className='price'>{Currency.simplelyPrice(currency.avgPrice)}</span>
-                <span className='money-symbol'>{currency.symbol}</span>
+                <div className='priceInfo'>
+                  <span className='symbol'>{currency.pair.secondaryCurrency}</span>
+                  <span className='symbolUnit'>/{currency.pair.baseCurrency}</span>
+                  <span className='price'>{Currency.simplelyPrice(currency.avgPrice)}</span>
+                  <span className='money-symbol'>{currency.symbol}</span>
+                </div>
+                <Trend pair={currency.pair.pair} mode={TrendMode.Embedded}/>
               </div>
               <div className='line'/>
             </>

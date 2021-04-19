@@ -23,6 +23,12 @@
   /* background-color: bisque; */
 }
 
+.trend-chart-embeded {
+  height: 20px !important;
+  width: 40%;
+  display: inline-block;
+}
+
 .info-bar {
   height: 20px;
   font-size: 14px;
