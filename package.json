@@ -1,7 +1,7 @@
 {
-  "name": "electron-react-boilerplate",
-  "productName": "ElectronReact",
-  "description": "Electron application boilerplate based on React, React Router, Webpack, React Fast Refresh for rapid application development",
+  "name": "crypto-currency-monitor",
+  "productName": "crypto-currency-monitor",
+  "description": "Pure crypto currency monitor",
   "scripts": {
     "build": "concurrently \"yarn build:main\" \"yarn build:renderer\"",
     "build:main": "cross-env NODE_ENV=production webpack --config ./.erb/configs/webpack.config.main.prod.babel.js",
@@ -83,7 +83,7 @@
     "directories": {
       "app": "src",
       "buildResources": "assets",
-      "output": "release2"
+      "output": "release"
     },
     "extraResources": [
       "./assets/**"

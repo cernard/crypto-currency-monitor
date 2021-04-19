@@ -144,6 +144,9 @@ const createWindow = async () => {
     // parent: monitorWindow
   });
 
+  monitorWindow.setSkipTaskbar(true);
+  configWindow.setSkipTaskbar(true);
+  trendWindow.setSkipTaskbar(true);
 
   monitorWindow.loadURL(`file://${__dirname}/MonitorWindow/index.html`);
   configWindow.loadURL(`file://${__dirname}/ConfigWindow/index.html`);
@@ -209,7 +212,13 @@ const createWindow = async () => {
       trendWindow?.hide()
       event.preventDefault()
     }
-  })
+  });
+  monitorWindow.webContents.on('before-input-event', (event, input) => {
+    if (input.key.toLowerCase() === 'escape') {
+      app.quit()
+      event.preventDefault()
+    }
+  });
 
   const menuBuilder1 = new MenuBuilder(monitorWindow);
   menuBuilder1.buildMenu();
