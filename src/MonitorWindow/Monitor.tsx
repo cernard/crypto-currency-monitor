@@ -23,6 +23,7 @@ class Monitor extends Component {
 
   updateState = () => {
     const pairs:Pair[] = store.get(config.PAIRS);
+    console.log(pairs);
     const currencies: Currency[] = pairs.map(pair => store.get(pair.pair));
     this.setState({currencies});
   }
@@ -36,7 +37,7 @@ class Monitor extends Component {
 
     // resize with monitor currency count;
     if (this.state.currencies.length === 0) {
-      config.winMonitorHeight = 40;
+      config.winMonitorHeight = 35;
     } else {
       config.winMonitorHeight = 35 * currencies.length;
     }
@@ -75,7 +76,9 @@ class Monitor extends Component {
                 <div className='priceInfo'>
                   <span className='symbol'>{currency.pair.secondaryCurrency}</span>
                   <span className='symbolUnit'>/{currency.pair.baseCurrency}</span>
-                  <span className='price'>{Currency.simplelyPrice(currency.avgPrice)}</span>
+                  <span className='price' style={{
+                    color: currency.avgPrice >= currency.pair.purchasePrice ? 'rgba(41, 209, 143, 100)' : 'rgb(231, 90, 112)'
+                  }}>{Currency.simplelyPrice(currency.avgPrice)}</span>
                   <span className='money-symbol'>{currency.symbol}</span>
                 </div>
                 <Trend pair={currency.pair.pair} mode={TrendMode.Embedded}/>

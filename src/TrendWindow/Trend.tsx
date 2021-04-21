@@ -60,8 +60,19 @@ class Trend extends Component {
           <div className='title'>Last 24H Trend</div>
           <ReactECharts option={option} className='trend-chart'/>
           <div className='info-bar'>
+            <span className='text'>PP:
+              <span style={{
+                color: currency.avgPrice >= currency.pair.purchasePrice ? 'rgba(41, 209, 143, 100)' : 'rgb(231, 90, 112)'
+              }}>
+                {currency.pair.purchasePrice}
+              </span>
+              <span>$</span>
+            </span>
             <span>
-              <span className='info-bar-price'>{Currency.simplelyPrice(currency.avgPrice)}</span>
+              <span className='text'>
+                CMP:
+                <span className='info-bar-price'>{Currency.simplelyPrice(currency.avgPrice)}</span>
+              </span>
               <span>$</span>
             </span>
             <span className='info-bar-upanddown' style={{color: currency.priceChangePrecentIn24H?.indexOf('-') >= 0 ? 'rgb(231, 90, 112)': 'rgba(41, 209, 143, 100)'}}>{currency.priceChangePrecentIn24H}%</span>

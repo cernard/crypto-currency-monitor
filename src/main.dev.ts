@@ -372,6 +372,7 @@ setInterval(() => {
         }
         // Get currency obj from store, if currency is not defined, pass a new currency instrance and save it.
         const currency: Currency = store.get(pair.pair) ?? new Currency(pair);
+        currency.pair = pair;
         const x: string[] = [];
         const y: number[] = [];
         data.forEach((item: any) => {
@@ -409,6 +410,7 @@ setInterval(() => {
         }
         // Get currency obj from store, if currency is not defined, pass a new currency instrance and save it.
         const currency: Currency = store.get(pair.pair) ?? new Currency(pair);
+        currency.pair = pair;
         currency.priceChangePrecentIn24H = data['priceChangePercent'];
         currency.volume = parseFloat(data['volume']);
         currency.avgPrice = parseFloat(data['lastPrice'])

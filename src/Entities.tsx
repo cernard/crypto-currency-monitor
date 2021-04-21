@@ -57,11 +57,13 @@ class Pair {
   secondaryCurrency: string;
   baseCurrency: string;
   pair: string;
+  public purchasePrice: number;
 
-  constructor(secondaryCurrency: string, baseCurrency: string = 'USDT') {
+  constructor(secondaryCurrency: string, baseCurrency: string = 'USDT', purchasePrice: number = -1) {
     this.secondaryCurrency = secondaryCurrency;
     this.baseCurrency = baseCurrency;
-    this.pair = `${this.secondaryCurrency}${this.baseCurrency}`
+    this.pair = `${this.secondaryCurrency}${this.baseCurrency}`;
+    this.purchasePrice = purchasePrice;
   }
 }
 

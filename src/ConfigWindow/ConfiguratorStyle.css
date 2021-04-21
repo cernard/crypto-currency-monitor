@@ -49,13 +49,13 @@ body {
 }
 
 /* clear input style */
-.input {
+.input, .price-input {
   outline: none;
   border: 0px;
   background: none;
 }
 
-.input {
+.input, .price-input {
   display: inline-block;
   width: 132px;
   border-radius: 5px;
@@ -64,7 +64,7 @@ body {
   /* background-color: rgb(100, 100, 100); */
 }
 
-.input:focus {
+.input:focus, .price-input:focus {
   outline: none;
   background-color: rgb(100, 100, 100);
 }
@@ -121,13 +121,12 @@ body {
 
 .pair-item {
   /* background-color: red; */
-  width: 90%;
+  width: 80%;
   display: inline-flex;
-  justify-content: space-around;
+  justify-content: space-between;
   align-items: center;
   height: 20px;
-  margin-top: 10px;
-  margin-bottom: 10px;
+  margin: 10px;
 }
 
 .pair {
@@ -157,4 +156,24 @@ body {
 
 .line:last-child {
   display: none;
+}
+
+.pair-box {
+  display: inline-flex;
+  flex-direction: column;
+  line-height: 15px;
+}
+
+.purchase-price-label {
+  font-size: 10px;
+  height: 10px
+}
+
+.price-input {
+  height: 10px;
+  display: inline;
+  width: 50px;
+  margin-left: 5px;
+  border: none;
+  font-size: 10px;
 }

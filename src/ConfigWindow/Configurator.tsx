@@ -86,6 +86,17 @@ class Configurator extends Component {
     this.setState({pair: value.toUpperCase()});
   }
 
+  changePurchasePrice = (pair: Pair, {target: { value = '' }}) => {
+    const pairs: Pair[] = this.state.pairs.slice();
+    let p = pairs.find(_p => _p.pair === pair.pair);
+    log.info(p)
+    if (p) {
+      p.purchasePrice = parseFloat(value);
+    }
+    this.setState({pairs});
+    store.set(config.PAIRS, pairs);
+  }
+
   render() {
     const { pairs, pair } = this.state;
     return (
@@ -102,7 +113,13 @@ class Configurator extends Component {
             pairs.map((pair: Pair) => (
               <>
               <div className='pair-item'>
-                <span className='pair'>{pair.secondaryCurrency}/{pair.baseCurrency}</span>
+                <span className='pair-box'>
+                  <div className='pair'>{pair.secondaryCurrency}/{pair.baseCurrency}</div>
+                  <div className='price-box'>
+                    <span className='purchase-price-label'>Purchase price:</span>
+                    <input className='price-input' type='number' value={pair.purchasePrice} onChange={e => this.changePurchasePrice(pair, e)} />
+                  </div>
+                </span>
                 <img className='delete-icon' src='../../assets/delete.svg' onClick={() => this.deletePair(pair)}/>
               </div>
               <div className='line'/>

@@ -31,7 +31,7 @@
 
 .info-bar {
   height: 20px;
-  font-size: 14px;
+  font-size: 14px !important;
   width: 85%;
   display: flex;
   justify-content: space-between;
@@ -46,4 +46,8 @@
 
 .info-bar-upanddown {
   color: rgb(41, 209, 143);
+}
+
+.text {
+
 }
