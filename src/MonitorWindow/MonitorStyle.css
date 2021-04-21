@@ -30,7 +30,6 @@
 
 .price {
   font-size: 16px;
-  line-height: 16px;
   margin-right: 2px;
   color: rgba(238, 205, 73, 100);
   font-weight: bold;
@@ -86,7 +85,7 @@
 
 .priceInfo {
   display: inline-flex;
-  width: 70%;
+  width: 60%;
   margin-right: 10px;
   overflow-x: hidden;
   align-items: center;

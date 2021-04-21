@@ -61,9 +61,7 @@ class Trend extends Component {
           <ReactECharts option={option} className='trend-chart'/>
           <div className='info-bar'>
             <span className='text'>PP:
-              <span style={{
-                color: currency.avgPrice >= currency.pair.purchasePrice ? 'rgba(41, 209, 143, 100)' : 'rgb(231, 90, 112)'
-              }}>
+              <span style={{marginLeft: 2}}>
                 {currency.pair.purchasePrice}
               </span>
               <span>$</span>
@@ -71,7 +69,7 @@ class Trend extends Component {
             <span>
               <span className='text'>
                 CMP:
-                <span className='info-bar-price'>{Currency.simplelyPrice(currency.avgPrice)}</span>
+                <span style={{marginLeft: 2}} className='info-bar-price'>{Currency.simplelyPrice(currency.avgPrice)}</span>
               </span>
               <span>$</span>
             </span>

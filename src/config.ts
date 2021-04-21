@@ -1,11 +1,11 @@
 const config = {
-  winMonitorWidth: 250,
-  winMonitorHeight: 50,
+  winMonitorWidth: 300,
+  winMonitorHeight: 35,
 
-  winConfigWidth: 250,
+  winConfigWidth: 300,
   winConfigHeight: 380,
 
-  winTrendWidth: 250,
+  winTrendWidth: 300,
   winTrendHeight: 100,
 
   PAIRS: 'pairs'
