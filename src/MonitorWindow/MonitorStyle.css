@@ -31,7 +31,7 @@
 .price {
   font-size: 16px;
   line-height: 16px;
-  margin-right: 5px;
+  margin-right: 2px;
   color: rgba(238, 205, 73, 100);
   font-weight: bold;
 }
@@ -86,7 +86,7 @@
 
 .priceInfo {
   display: inline-flex;
-  width: 60%;
+  width: 70%;
   margin-right: 10px;
   overflow-x: hidden;
   align-items: center;
@@ -151,4 +151,16 @@
   100% {
     left: 0px;
   }
+}
+
+.money-symbol {
+  font-size: 13px;
+}
+
+.dot {
+  display: inline-block;
+  height: 5px;
+  width: 5px;
+  border-radius: 5px;
+  margin-right: 5px;
 }
