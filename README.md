@@ -36,3 +36,11 @@ Click the setting button on the right corner of the suspension monitor can show 
 The trend window will be shown when the mouse moves over the suspension monitor.
 
 <img src='./images/trend.png'>
+
+## TODO
+
+- [ ] Auto check valid exchanges.
+- [ ] Manual check valid exchanges.
+- [ ] Sort exchanges by delay.
+- [ ] Check valid symbol from exchanges.
+- [ ] Auto load balance.

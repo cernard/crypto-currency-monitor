@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="6" height="6" viewBox="0 0 6 6">
+  <defs>
+    <clipPath id="clip-path">
+      <rect width="6" height="6" fill="none"/>
+    </clipPath>
+  </defs>
+  <g id="重复网格_1" data-name="重复网格 1" clip-path="url(#clip-path)">
+    <g transform="translate(-5 -5)">
+      <path id="Icon_ionic-ios-close" data-name="Icon ionic-ios-close" d="M15,14.289l2.143-2.144a.5.5,0,1,0-.71-.71l-2.143,2.144-2.143-2.144a.5.5,0,1,0-.71.71l2.143,2.144-2.143,2.144a.5.5,0,1,0,.71.71L14.286,15l2.143,2.144a.5.5,0,1,0,.71-.71Z" transform="translate(-6.285 -6.289)" fill="rgba(255,255,255,0.85)"/>
+    </g>
+  </g>
+</svg>

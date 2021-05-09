@@ -2,26 +2,17 @@
  * @NOTE: Prepend a `~` to css file paths that are in your node_modules
  *        See https://github.com/webpack-contrib/sass-loader#imports
  */
+@import './css/photon.css';
+@import 'antd/dist/antd.css';
+
 body {
   color: rgba(232, 232, 232, 100);
   user-select: none;
-  border-radius: 10px;
-  /* box-shadow: 0 2px 6px 0 rgba(0, 0, 0, 0.4); */
-  /* height: 97px; */
-  width: 250px;
-  /* -webkit-app-region: drag; */
-  overflow: hidden;
-  /* background: red; */
-  transition: ease-in-out 0.25s;
-  margin: 0px;
-  background-color: rgba(0, 0, 0, 0.493);
-}
-
-body:hover {
-  background-color: rgba(0, 0, 0, 0.657);
+  width: 100%;
+  height: 100%;
 }
 
 #root {
-  height: 100vh;
-  width: 100vw;
+  height: 100%;
+  width: 100%;
 }

@@ -1,14 +1,16 @@
 const config = {
-  winMonitorWidth: 300,
-  winMonitorHeight: 35,
+  winMonitorWidth: 320,
+  winMonitorHeight: 70,
 
-  winConfigWidth: 300,
-  winConfigHeight: 380,
+  winConfigWidth: 930,
+  winConfigHeight: 570,
 
   winTrendWidth: 300,
   winTrendHeight: 100,
 
-  PAIRS: 'pairs'
+  PAIRS: 'pairs',
+
+  isPin: true
 };
 
 export default config;

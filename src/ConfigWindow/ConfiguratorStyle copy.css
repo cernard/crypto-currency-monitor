@@ -1,0 +1,182 @@
+body {
+  background-color: rgb(52, 52, 52) !important;
+}
+
+.container {
+  height: 100%;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.title {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding-top: 10px;
+  padding-bottom: 10px;
+  background-color: rgb(34, 34, 34) !important;
+  text-align: center;
+  box-shadow: 0 2px 7px 0 rgb(34, 34, 34);
+}
+
+.close-btn {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  background-color: rgb(255, 110, 110);
+  border-radius: 12px;
+  position: absolute;
+  right: 10px;
+  cursor: pointer;
+}
+
+.close-btn:hover {
+  background-color: rgb(255, 80, 80);
+}
+
+.close-btn:active {
+  background-color: rgb(255, 60, 60);
+}
+
+.input-box {
+  display: flex;
+  justify-content: space-around;
+  margin-top: 18px;
+  height: 30px;
+}
+
+/* clear input style */
+.input,
+.price-input {
+  outline: none;
+  border: 0px;
+  background: none;
+}
+
+.input,
+.price-input {
+  display: inline-block;
+  width: 132px;
+  border-radius: 5px;
+  border: 1px solid rgb(100, 100, 100);
+  color: rgba(232, 232, 232, 100);
+  /* background-color: rgb(100, 100, 100); */
+}
+
+.input:focus,
+.price-input:focus {
+  outline: none;
+  background-color: rgb(100, 100, 100);
+}
+
+.add-btn {
+  display: inline-flex;
+  background-color: #cca91e;
+  justify-content: center;
+  align-items: center;
+  width: 61px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.add-btn:hover {
+  background-color: #967802;
+}
+
+.add-btn:active {
+  background-color: #5e4b00;
+}
+
+.pair-list {
+  flex: 1;
+  margin-top: 10px;
+  margin-bottom: 10px;
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  overflow-y: hidden;
+}
+
+.pair-list:hover {
+  overflow-y: auto;
+}
+.pair-list::-webkit-scrollbar {
+  width: 3px;
+  height: 3px;
+  background-color: transparent;
+}
+
+.pair-list::-webkit-scrollbar-thumb {
+  border-radius: 3px;
+  -webkit-box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.3);
+  background-color: rgba(85, 85, 85, 0.692);
+}
+
+.pair-list::-webkit-scrollbar-track {
+  -webkit-box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.3);
+  border-radius: 3px;
+  background-color: transparent;
+}
+
+.pair-item {
+  /* background-color: red; */
+  width: 80%;
+  display: inline-flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 20px;
+  margin: 10px;
+}
+
+.pair {
+}
+
+.delete-icon {
+  width: 15px;
+  height: 15px;
+  cursor: pointer;
+}
+
+.delete-icon:hover {
+  transition: ease-in-out 0.25s;
+  transform: rotate(90deg);
+}
+
+.delete-icon:active {
+  transition: ease-in-out 0.1s;
+  transform: scale(0.9);
+}
+
+.line {
+  height: 1px;
+  background-color: rgba(187, 187, 187, 100);
+  width: 90%;
+}
+
+.line:last-child {
+  display: none;
+}
+
+.pair-box {
+  display: inline-flex;
+  flex-direction: column;
+  line-height: 15px;
+}
+
+.purchase-price-label {
+  font-size: 10px;
+  height: 10px;
+}
+
+.price-input {
+  height: 10px;
+  display: inline;
+  width: 50px;
+  margin-left: 5px;
+  border: none;
+  font-size: 10px;
+}

@@ -11,22 +11,27 @@
 import 'core-js/stable';
 import 'regenerator-runtime/runtime';
 import path from 'path';
-import { app, BrowserWindow, shell, ipcMain, dialog } from 'electron';
+import { app, BrowserWindow, shell, ipcMain } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
-import MenuBuilder from './menu';
-import config from './config';
-import { IpcMainEvent } from 'electron/main';
-import { Currency, KData, Pair } from './Entities';
-import fs from 'fs';
-import os from 'os';
 import Store from 'electron-store';
 import fetch from 'electron-fetch';
+// import { createStore, applyMiddleware } from 'redux';
+// import {
+//   forwardToRenderer,
+//   triggerAlias,
+//   replayActionMain,
+//   createAliasedAction
+// } from 'electron-redux';
+import { Currency, KData, Pair } from './Entities';
+import config from './config';
+import MenuBuilder from './menu';
 import SyncQueue from './SyncQueue';
 
 const store = new Store();
+// const reducers = require('../reducers');
 
-const configPath = path.join(os.homedir(), "../config.json");
+// const reduxStore = createStore(reducers, 0, applyMiddleware(triggerAlias, forwardToRenderer));
 
 export default class AppUpdater {
   constructor() {
@@ -88,7 +93,7 @@ const createWindow = async () => {
     icon: getAssetPath('coin-bitcoin.png'),
     webPreferences: {
       nodeIntegration: true,
-      enableRemoteModule: true
+      enableRemoteModule: true,
     },
     frame: false,
     transparent: true,
@@ -96,31 +101,31 @@ const createWindow = async () => {
     alwaysOnTop: true,
     type: 'toolbar',
     hasShadow: true,
-    backgroundColor: '#00000000',
+    // backgroundColor: '',
     fullscreenable: false,
     maximizable: false,
-    fullscreen: false
+    fullscreen: false,
   });
   configWindow = new BrowserWindow({
-    show: false,
+    show: true,
     width: config.winConfigWidth,
     height: config.winConfigHeight,
     icon: getAssetPath('coin-bitcoin.png'),
     webPreferences: {
       nodeIntegration: true,
-      enableRemoteModule: true
+      enableRemoteModule: true,
     },
-    frame: false,
-    transparent: true,
-    resizable: false,
-    alwaysOnTop: true,
+    frame: true,
+    transparent: false,
+    resizable: true,
+    alwaysOnTop: false,
     // type: 'toolbar',
     hasShadow: true,
     backgroundColor: '#00000000',
     fullscreenable: false,
-    maximizable: false,
+    maximizable: true,
     fullscreen: false,
-    parent: monitorWindow
+    parent: monitorWindow,
   });
   trendWindow = new BrowserWindow({
     show: false,
@@ -129,7 +134,7 @@ const createWindow = async () => {
     icon: getAssetPath('coin-bitcoin.png'),
     webPreferences: {
       nodeIntegration: true,
-      enableRemoteModule: true
+      enableRemoteModule: true,
     },
     frame: false,
     transparent: true,
@@ -172,10 +177,9 @@ const createWindow = async () => {
     }
     if (process.env.START_MINIMIZED) {
       configWindow.minimize();
-    }
-    else {
-    //   configWindow.show();
-    //   configWindow.focus();
+    } else {
+      //   configWindow.show();
+      //   configWindow.focus();
     }
   });
   trendWindow.webContents.on('did-finish-load', () => {
@@ -184,8 +188,7 @@ const createWindow = async () => {
     }
     if (process.env.START_MINIMIZED) {
       trendWindow?.minimize();
-    }
-    else {
+    } else {
       // trendWindow?.show();
       // trendWindow?.focus();
     }
@@ -203,20 +206,20 @@ const createWindow = async () => {
 
   configWindow.webContents.on('before-input-event', (event, input) => {
     if (input.key.toLowerCase() === 'escape') {
-      configWindow?.hide()
-      event.preventDefault()
+      configWindow?.hide();
+      event.preventDefault();
     }
   });
   trendWindow.webContents.on('before-input-event', (event, input) => {
     if (input.key.toLowerCase() === 'escape') {
-      trendWindow?.hide()
-      event.preventDefault()
+      trendWindow?.hide();
+      event.preventDefault();
     }
   });
   monitorWindow.webContents.on('before-input-event', (event, input) => {
     if (input.key.toLowerCase() === 'escape') {
-      app.quit()
-      event.preventDefault()
+      app.quit();
+      event.preventDefault();
     }
   });
 
@@ -263,7 +266,8 @@ app.whenReady().then(createWindow).catch(console.log);
 app.on('activate', () => {
   // On macOS it's common to re-create a window in the app when the
   // dock icon is clicked and there are no other windows open.
-  if (monitorWindow === null || configWindow === null || trendWindow === null) createWindow();
+  if (monitorWindow === null || configWindow === null || trendWindow === null)
+    createWindow();
 });
 
 /**
@@ -272,12 +276,12 @@ app.on('activate', () => {
 
 ipcMain.on('showConfigWindow', () => {
   // configWindow.webContents.openDevTools();
-  configWindow?.show()
-  configWindow?.focus()
+  configWindow?.show();
+  configWindow?.focus();
 });
 
 ipcMain.on('hideConfigWindow', () => {
-  configWindow?.hide()
+  configWindow?.hide();
 });
 
 ipcMain.on('showTrendWindow', (_, pair: Pair) => {
@@ -285,18 +289,33 @@ ipcMain.on('showTrendWindow', (_, pair: Pair) => {
   const [x, y] = monitorWindow?.getPosition();
   // trendWindow.webContents.openDevTools();
   trendWindow?.setPosition(x, y - config.winTrendHeight - 10);
-  trendWindow?.show()
-  trendWindow?.focus()
+  trendWindow?.show();
+  trendWindow?.focus();
 });
 
 ipcMain.on('hideTrendWindow', () => {
   trendWindow?.webContents.send('stopUpdate');
-  trendWindow?.hide()
+  trendWindow?.hide();
 });
 
 ipcMain.on('updateConfig', () => {
   monitorWindow?.webContents.send('wakeup');
 });
+
+ipcMain.on('quitApp', () => {
+  app.quit();
+});
+
+if (!store.get('isPin') == null) {
+  store.set('isPin', true);
+}
+ipcMain.on('togglePin', (e) => {
+  const isPin = !store.get('isPin');
+  store.set('isPin', isPin);
+  monitorWindow?.setAlwaysOnTop(isPin);
+  e.reply('updatePinState', isPin);
+});
+
 /**
  * Notify to all
  */
@@ -304,13 +323,13 @@ const notifyAll = () => {
   monitorWindow?.webContents.send('wakeup');
   trendWindow?.webContents.send('wakeup');
   configWindow?.webContents.send('wakeup');
-}
+};
 
 /**
  * Timing tasks
- * Share data between the different windows.
+ * Shared data between the different windows.
  */
-const PAIRS: string = config.PAIRS;
+const { PAIRS } = config;
 let waitLock = false;
 const taskQueue: SyncQueue = new SyncQueue();
 const priceChangeIn24HQueue: SyncQueue = new SyncQueue();
@@ -318,8 +337,10 @@ const priceChangeIn24HQueue: SyncQueue = new SyncQueue();
 // if api response error, wait 2s.
 const wait = () => {
   waitLock = true;
-  setTimeout(() => {waitLock = false}, 2000);
-}
+  setTimeout(() => {
+    waitLock = false;
+  }, 2000);
+};
 /*
 // Update average transaction price
 const avgPriceAPI = 'https://api.binance.com/api/v3/avgPrice'
@@ -353,44 +374,49 @@ setInterval(() => {
 }, 2000);
  */
 // Update K line data in past 24 hours
-const kLineDataAPI: string = 'https://api.binance.com/api/v3/klines';
-const interval: string = '1h';
+const kLineDataAPI = 'https://api.binance.com/api/v3/klines';
+const interval = '1h';
 const endTime: number = Date.now();
-const startTime: number = endTime - 86400000 // 24h ago
+const startTime: number = endTime - 86400000; // 24h ago
 
 // Start timing task by default
 setInterval(() => {
   if (!waitLock) {
     const pairs: Pair[] = store.get(PAIRS) ?? [];
 
-    pairs.forEach(pair => taskQueue.add(() => {
-      fetch(`${kLineDataAPI}?symbol=${pair.pair}&interval=${interval}&startTime=${startTime}&endTime=${endTime}`)
-      .then(rep => rep.json())
-      .then((data: any) => {
-        if (data['code']) {
-          throw new Error(data['msg']);
-        }
-        // Get currency obj from store, if currency is not defined, pass a new currency instrance and save it.
-        const currency: Currency = store.get(pair.pair) ?? new Currency(pair);
-        currency.pair = pair;
-        const x: string[] = [];
-        const y: number[] = [];
-        data.forEach((item: any) => {
-          x.push(item[0]); // Opening time
-          y.push(parseFloat(item[1])) // Opening price
-        });
-        const kData: KData = new KData(x, y);
-        currency.kData = kData;
-        store.set(pair.pair, currency);
+    pairs.forEach((pair) =>
+      taskQueue.add(() => {
+        fetch(
+          `${kLineDataAPI}?symbol=${pair.pair}&interval=${interval}&startTime=${startTime}&endTime=${endTime}`
+        )
+          .then((rep) => rep.json())
+          .then((data: any) => {
+            if (data.code) {
+              throw new Error(data.msg);
+            }
+            // Get currency obj from store, if currency is not defined, pass a new currency instrance and save it.
+            const currency: Currency =
+              store.get(pair.pair) ?? new Currency(pair);
+            currency.pair = pair;
+            const x: string[] = [];
+            const y: number[] = [];
+            data.forEach((item: any) => {
+              x.push(item[0]); // Opening time
+              y.push(parseFloat(item[1])); // Opening price
+            });
+            const kData: KData = new KData(x, y);
+            currency.kData = kData;
+            store.set(pair.pair, currency);
 
-        notifyAll();
+            notifyAll();
+          })
+          .catch((err) => {
+            // if fetch got error, print it and wait 2000 second, because of binance has limited api request frequency.
+            log.error(err);
+            wait();
+          });
       })
-      .catch(err => {
-        // if fetch got error, print it and wait 2000 second, because of binance has limited api request frequency.
-        log.error(err);
-        wait();
-      })
-    }));
+    );
   }
 }, 2000);
 
@@ -401,29 +427,31 @@ setInterval(() => {
   if (!waitLock) {
     const pairs: Pair[] = store.get(PAIRS) ?? [];
 
-    pairs.forEach((pair: Pair) => priceChangeIn24HQueue.add(() => {
-      fetch(`${priceChangeIn24HAPI}?symbol=${pair.pair}`)
-      .then(rep => rep.json())
-      .then((data) => {
-        if (data['code']) {
-          throw new Error(data['msg']);
-        }
-        // Get currency obj from store, if currency is not defined, pass a new currency instrance and save it.
-        const currency: Currency = store.get(pair.pair) ?? new Currency(pair);
-        currency.pair = pair;
-        currency.priceChangePrecentIn24H = data['priceChangePercent'];
-        currency.volume = parseFloat(data['volume']);
-        currency.avgPrice = parseFloat(data['lastPrice'])
-        store.set(pair.pair, currency);
+    pairs.forEach((pair: Pair) =>
+      priceChangeIn24HQueue.add(() => {
+        fetch(`${priceChangeIn24HAPI}?symbol=${pair.pair}`)
+          .then((rep) => rep.json())
+          .then((data) => {
+            if (data.code) {
+              throw new Error(data.msg);
+            }
+            // Get currency obj from store, if currency is not defined, pass a new currency instrance and save it.
+            const currency: Currency =
+              store.get(pair.pair) ?? new Currency(pair);
+            currency.pair = pair;
+            currency.priceChangePrecentIn24H = data.priceChangePercent;
+            currency.volume = parseFloat(data.volume);
+            currency.avgPrice = parseFloat(data.lastPrice);
+            store.set(pair.pair, currency);
 
-        notifyAll();
+            notifyAll();
+          })
+          .catch((err) => {
+            // if fetch got error, print it and wait 2000 second, because of binance has limited api request frequency.
+            log.error(err);
+            wait();
+          });
       })
-      .catch(err => {
-        // if fetch got error, print it and wait 2000 second, because of binance has limited api request frequency.
-        log.error(err);
-        wait();
-      });
-    }));
+    );
   }
 }, 2000);
-
