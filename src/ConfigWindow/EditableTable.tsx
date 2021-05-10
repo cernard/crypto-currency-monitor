@@ -2,7 +2,11 @@ import React, { useContext, useState, useEffect, useRef } from 'react';
 import { Table, Input, Select, Popconfirm, Form } from 'antd';
 import { MenuOutlined } from '@ant-design/icons';
 import { FormInstance } from 'antd/lib/form';
-import { sortableContainer, sortableElement, sortableHandle } from 'react-sortable-hoc';
+import {
+  SortableContainer,
+  SortableElement,
+  SortableHandle,
+} from 'react-sortable-hoc';
 import arrayMove from 'array-move';
 
 const EditableContext = React.createContext<FormInstance<any> | null>(null);
@@ -64,9 +68,9 @@ const EditableCell: React.FC<EditableCellProps> = ({
   };
 
   let childNode = children;
-  let editableChild = null
+  let editableChild = null;
   if (editable) {
-    switch(dataIndex) {
+    switch (dataIndex) {
       case 'base':
         editableChild = (
           <Form.Item
@@ -85,74 +89,86 @@ const EditableCell: React.FC<EditableCellProps> = ({
           </Form.Item>
         );
         break;
-        case 'quote':
-          editableChild = (
-            <Form.Item
-              style={{ margin: 0 }}
-              name={dataIndex}
-              rules={[
-                {
-                  required: true,
-                  message: `Quote is required.`,
-                },
-              ]}
-            >
-              <Select ref={inputRef} onBlur={save} showSearch>
-                <Option value="BTC">BTC</Option>
-                <Option value="USDT">USDT</Option>
-              </Select>
-            </Form.Item>
-          );
-          break;
-          case 'pp':
-          editableChild = (
-            <Form.Item
-              style={{ margin: 0 }}
-              name={dataIndex}
-              rules={[
-                {
-                  required: false
-                },
-              ]}
-            >
-              <Input ref={inputRef} onPressEnter={save} onBlur={save} type='number' />
-            </Form.Item>
-          );
-          break;
-          case 'amount':
-            editableChild = (
-              <Form.Item
-                style={{ margin: 0 }}
-                name={dataIndex}
-                rules={[
-                  {
-                    required: false
-                  },
-                ]}
-              >
-                <Input ref={inputRef} onPressEnter={save} onBlur={save} type='number' />
-              </Form.Item>
-            );
-            break;
-            case 'exchange':
-              editableChild = (
-                <Form.Item
-                  style={{ margin: 0 }}
-                  name={dataIndex}
-                  rules={[
-                    {
-                      required: true,
-                      message: `Exchange is required.`
-                    },
-                  ]}
-                >
-                  <Select ref={inputRef} onBlur={save} showSearch>
-                    <Option value="auto">Auto</Option>
-                    <Option value="biance">Biance</Option>
-                  </Select>
-                </Form.Item>
-              );
-              break;
+      case 'quote':
+        editableChild = (
+          <Form.Item
+            style={{ margin: 0 }}
+            name={dataIndex}
+            rules={[
+              {
+                required: true,
+                message: `Quote is required.`,
+              },
+            ]}
+          >
+            <Select ref={inputRef} onBlur={save} showSearch>
+              <Option value="BTC">BTC</Option>
+              <Option value="USDT">USDT</Option>
+            </Select>
+          </Form.Item>
+        );
+        break;
+      case 'pp':
+        editableChild = (
+          <Form.Item
+            style={{ margin: 0 }}
+            name={dataIndex}
+            rules={[
+              {
+                required: false,
+              },
+            ]}
+          >
+            <Input
+              ref={inputRef}
+              onPressEnter={save}
+              onBlur={save}
+              type="number"
+            />
+          </Form.Item>
+        );
+        break;
+      case 'amount':
+        editableChild = (
+          <Form.Item
+            style={{ margin: 0 }}
+            name={dataIndex}
+            rules={[
+              {
+                required: false,
+              },
+            ]}
+          >
+            <Input
+              ref={inputRef}
+              onPressEnter={save}
+              onBlur={save}
+              type="number"
+            />
+          </Form.Item>
+        );
+        break;
+      case 'exchange':
+        editableChild = (
+          <Form.Item
+            style={{ margin: 0 }}
+            name={dataIndex}
+            rules={[
+              {
+                required: true,
+                message: `Exchange is required.`,
+              },
+            ]}
+          >
+            <Select ref={inputRef} onBlur={save} showSearch>
+              <Option value="auto">Auto</Option>
+              <Option value="biance">Biance</Option>
+            </Select>
+          </Form.Item>
+        );
+        break;
+      default:
+        editableChild = <>Unsupport field</>;
     }
     childNode = editing ? (
       editableChild
@@ -184,8 +200,24 @@ interface EditableTableState {
 }
 
 type ColumnTypes = Exclude<EditableTableProps['columns'], undefined>;
-const DragHandle = sortableHandle(() => <MenuOutlined style={{ cursor: 'grab', color: '#999' }} />);
+const DragHandle = SortableHandle(() => (
+  <MenuOutlined style={{ cursor: 'grab', color: '#999' }} />
+));
+const SortableItem = SortableElement((props) => <EditableRow {...props} />);
+const TBodySortableContainer = SortableContainer((props) => (
+  <tbody {...props} />
+));
 
+const EditableRow: React.FC<EditableRowProps> = ({ index, ...props }) => {
+  const [form] = Form.useForm();
+  return (
+    <Form form={form} component={false}>
+      <EditableContext.Provider value={form}>
+        <tr {...props} />
+      </EditableContext.Provider>
+    </Form>
+  );
+};
 class EditableTable extends React.Component<
   EditableTableProps,
   EditableTableState
@@ -199,35 +231,34 @@ class EditableTable extends React.Component<
       {
         title: 'Sort',
         dataIndex: 'sort',
-        width: 30,
+        width: 70,
         className: 'drag-visible',
         render: () => <DragHandle />,
       },
       {
         title: 'Base',
         dataIndex: 'base',
-        width: '30%',
-        editable: true
+        editable: true,
       },
       {
         title: 'Quote',
         dataIndex: 'quote',
-        editable: true
+        editable: true,
       },
       {
         title: 'Purchase price',
         dataIndex: 'pp',
-        editable: true
+        editable: true,
       },
       {
         title: 'Amount',
         dataIndex: 'amount',
-        editable: true
+        editable: true,
       },
       {
         title: 'Exchange',
         dataIndex: 'exchange',
-        editable: true
+        editable: true,
       },
       {
         title: 'operation',
@@ -276,7 +307,7 @@ class EditableTable extends React.Component<
       pp: 0,
       amount: 0,
       exchange: 'auto',
-      index: count
+      index: count,
     };
     this.setState({
       dataSource: [...dataSource, newData],
@@ -298,13 +329,17 @@ class EditableTable extends React.Component<
   onSortEnd = ({ oldIndex, newIndex }) => {
     const { dataSource } = this.state;
     if (oldIndex !== newIndex) {
-      const newData = arrayMove([].concat(dataSource), oldIndex, newIndex).filter(el => !!el);
+      const newData = arrayMove(
+        [].concat(dataSource),
+        oldIndex,
+        newIndex
+      ).filter((el) => !!el);
       this.setState({ dataSource: newData });
     }
   };
 
-  DraggableContainer = props => (
-    <SortableContainer
+  DraggableContainer = (props) => (
+    <TBodySortableContainer
       useDragHandle
       disableAutoscroll
       helperClass="row-dragging"
@@ -316,7 +351,9 @@ class EditableTable extends React.Component<
   DraggableBodyRow = ({ className, style, ...restProps }) => {
     const { dataSource } = this.state;
     // function findIndex base on Table rowKey props and should always be a right array index
-    const index = dataSource.findIndex(x => x.index === restProps['data-row-key']);
+    const index = dataSource.findIndex(
+      (x) => x.index === restProps['data-row-key']
+    );
     return <SortableItem index={index} {...restProps} />;
   };
 
@@ -347,7 +384,12 @@ class EditableTable extends React.Component<
     });
     return (
       <div>
-        <button className="btn btn-primary" style={{ marginRight: 10 }} onClick={this.handleAdd}>
+        <button
+          type="button"
+          className="btn btn-primary"
+          style={{ margin: 10, float: 'right' }}
+          onClick={this.handleAdd}
+        >
           Add one
         </button>
         <Table
@@ -362,19 +404,5 @@ class EditableTable extends React.Component<
     );
   }
 }
-
-const SortableItem = sortableElement(props => <EditableRow {...props} />);
-const SortableContainer = sortableContainer(props => <tbody {...props} />);
-
-const EditableRow: React.FC<EditableRowProps> = ({ index, ...props }) => {
-  const [form] = Form.useForm();
-  return (
-    <Form form={form} component={false}>
-      <EditableContext.Provider value={form}>
-        <tr {...props} />
-      </EditableContext.Provider>
-    </Form>
-  );
-};
 
 export default EditableTable;
