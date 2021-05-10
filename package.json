@@ -237,6 +237,7 @@
   },
   "dependencies": {
     "antd": "^4.15.4",
+    "array-move": "^3.0.1",
     "ccxt": "^1.49.25",
     "echarts": "^5.0.2",
     "echarts-for-react": "^3.0.1",
@@ -250,6 +251,7 @@
     "react": "^17.0.1",
     "react-dom": "^17.0.1",
     "react-router-dom": "^5.2.0",
+    "react-sortable-hoc": "^2.0.0",
     "redux": "^4.1.0",
     "regenerator-runtime": "^0.13.5",
     "source-map-support": "^0.5.19"
