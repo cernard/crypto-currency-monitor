@@ -1,5 +1,5 @@
 import React, { useContext, useState, useEffect, useRef } from 'react';
-import { Table, Input, Select, Popconfirm, Form } from 'antd';
+import { Table, Input, Select, Popconfirm, Form, message } from 'antd';
 import { MenuOutlined } from '@ant-design/icons';
 import { FormInstance } from 'antd/lib/form';
 import {
@@ -8,6 +8,10 @@ import {
   SortableHandle,
 } from 'react-sortable-hoc';
 import arrayMove from 'array-move';
+import Store from 'electron-store';
+import { ping, fetchMarkets } from '../utils/ccxt_util';
+
+const store = new Store();
 
 const EditableContext = React.createContext<FormInstance<any> | null>(null);
 interface Item {
@@ -326,6 +330,38 @@ class EditableTable extends React.Component<
     this.setState({ dataSource: newData });
   };
 
+  updateExchanges = async () => {
+    message.info('Checking valid exchanges...');
+    const { validExchanges } = await ping();
+    const exchanges: string[] = validExchanges.map(exchange => exchange.exchange);
+    message.info('Loading markets data...');
+    let exchangeMarkets = await fetchMarkets(exchanges);
+    // const jsonStr = JSON.stringify(exchangeMarkets);
+    // exchangeMarkets = JSON.parse(jsonStr);
+    const pairMap: Map<string, Map<string, string[]>> = new Map();
+    console.log(exchangeMarkets)
+    console.log(exchangeMarkets.length)
+    Object.entries(exchangeMarkets).forEach(entry => {
+      const exchange = entry[1];
+      exchange.markets.forEach(market => {
+        const base = market.base;
+        const quote = market.quote;
+        if (pairMap.has(base)) {
+          const quotes: Map<string, string[]> | undefined = pairMap.get(base);
+          if (quotes?.has(quote)) {
+            const es = quotes.get(quote);
+            es?.push(exchange.exchange);
+          }
+        } else {
+          const quoteMap: Map<string, string[]> = new Map();
+          quoteMap.set(quote, [exchange.exchange]);
+          pairMap.set(base, quoteMap);
+        }
+      });
+    });
+    console.log(pairMap);
+  }
+
   onSortEnd = ({ oldIndex, newIndex }) => {
     const { dataSource } = this.state;
     if (oldIndex !== newIndex) {
@@ -384,6 +420,14 @@ class EditableTable extends React.Component<
     });
     return (
       <div>
+        <button
+          type="button"
+          className="btn btn-default"
+          style={{ margin: 10, float: 'right' }}
+          onClick={this.updateExchanges}
+        >
+          Update exchanges
+        </button>
         <button
           type="button"
           className="btn btn-primary"
