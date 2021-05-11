@@ -6,12 +6,12 @@ const ccxt = require('ccxt');
  */
 
 interface ValidExchange {
-  exchange: string,
-  delay: number
+  exchange: string;
+  delay: number;
 }
 interface PingResult {
-  validExchanges: ValidExchange[],
-  invalidExchanges: string[]
+  validExchanges: ValidExchange[];
+  invalidExchanges: string[];
 }
 export async function ping(callback: Function = () => {}): Promise<PingResult> {
   let validExchanges = [];
@@ -44,50 +44,53 @@ export async function ping(callback: Function = () => {}): Promise<PingResult> {
   });
   return {
     validExchanges,
-    invalidExchanges
-  }
+    invalidExchanges,
+  };
 }
 
 interface Market {
-  id: string,
-  symbol: string,
-  base: string,
-  quote: string,
-  baseId: string,
-  quoteId: string,
-  darkpool: boolean,
-  info: any,
-  altname: string,
-  maker: number,
-  taker: number,
-  active: boolean,
-  precision: any,
-  limits: any
+  id: string;
+  symbol: string;
+  base: string;
+  quote: string;
+  baseId: string;
+  quoteId: string;
+  darkpool: boolean;
+  info: any;
+  altname: string;
+  maker: number;
+  taker: number;
+  active: boolean;
+  precision: any;
+  limits: any;
 }
-interface Markets {
-  exchange: string,
-  markets: Market[]
+export interface Markets {
+  exchange: string;
+  markets: Market[];
 }
 
-export async function fetchMarkets(exchanges: string[], callback: Function = () => {}): Promise<Markets[]> {
-  let markets: Markets[] = [];
+export async function fetchMarkets(
+  exchanges: string[],
+  callback: Function = () => {}
+): Promise<Markets[]> {
+  const markets: Markets[] = [];
   let count = exchanges.length;
   await exchanges.forEach(async (exchange) => {
     await new ccxt[exchange]()
-    .fetchMarkets()
-    .then(rep => {
-      markets.push({
-        exchange,
-        markets: rep
+      .fetchMarkets()
+      .then((rep) => {
+        markets.push({
+          exchange,
+          markets: rep,
+        });
+      })
+      .catch((err) => console.log(err))
+      .finally(() => {
+        count -= 1;
+        if (count === 0) {
+          callback.call(this, markets);
+        }
       });
-    })
-    .catch(err => console.log(err))
-    .finally(() => {
-      count -= 1;
-      if (count === 0) {
-        callback.call(this, markets);
-      }
-    });
   });
   return markets;
 }

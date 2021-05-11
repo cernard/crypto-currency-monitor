@@ -9,6 +9,7 @@ const config = {
   winTrendHeight: 100,
 
   PAIRS: 'pairs',
+  MARKETS: 'markets',
 
   isPin: true
 };

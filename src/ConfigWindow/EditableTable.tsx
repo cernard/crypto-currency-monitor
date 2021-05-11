@@ -1,5 +1,5 @@
 import React, { useContext, useState, useEffect, useRef } from 'react';
-import { Table, Input, Select, Popconfirm, Form, message } from 'antd';
+import { Table, Input, Select, Popconfirm, Form, message, Spin } from 'antd';
 import { MenuOutlined } from '@ant-design/icons';
 import { FormInstance } from 'antd/lib/form';
 import {
@@ -9,11 +9,19 @@ import {
 } from 'react-sortable-hoc';
 import arrayMove from 'array-move';
 import Store from 'electron-store';
-import { ping, fetchMarkets } from '../utils/ccxt_util';
+import { ipcRenderer } from 'electron';
+import { ping, fetchMarkets, Markets } from '../utils/ccxt_util';
+import config from '../config';
 
 const store = new Store();
 
 const EditableContext = React.createContext<FormInstance<any> | null>(null);
+const MarketsContext = React.createContext<BaseAndQuotes[]>([
+  {
+    base: 'TEST',
+    quotes: [],
+  },
+]);
 interface Item {
   key: string;
   base: string;
@@ -48,6 +56,7 @@ const EditableCell: React.FC<EditableCellProps> = ({
   const [editing, setEditing] = useState(false);
   const inputRef = useRef<Input>(null);
   const form = useContext(EditableContext)!;
+  const markets = useContext(MarketsContext);
 
   useEffect(() => {
     if (editing) {
@@ -88,7 +97,11 @@ const EditableCell: React.FC<EditableCellProps> = ({
             ]}
           >
             <Select ref={inputRef} onBlur={save} showSearch>
-              <Option value="BTC">BTC</Option>
+              {markets.map((market) => (
+                <Option value={market.base} key={market.base}>
+                  {market.base}
+                </Option>
+              ))}
             </Select>
           </Form.Item>
         );
@@ -201,6 +214,8 @@ interface DataType {
 interface EditableTableState {
   dataSource: DataType[];
   count: number;
+  markets: BaseAndQuotes[];
+  isMarketsLoading: boolean;
 }
 
 type ColumnTypes = Exclude<EditableTableProps['columns'], undefined>;
@@ -222,6 +237,14 @@ const EditableRow: React.FC<EditableRowProps> = ({ index, ...props }) => {
     </Form>
   );
 };
+interface QuoteAndExchages {
+  quote: string;
+  exchanges: string[];
+}
+interface BaseAndQuotes {
+  base: string;
+  quotes: QuoteAndExchages[];
+}
 class EditableTable extends React.Component<
   EditableTableProps,
   EditableTableState
@@ -292,6 +315,8 @@ class EditableTable extends React.Component<
         // }
       ],
       count: 2,
+      markets: [],
+      isMarketsLoading: false,
     };
   }
 
@@ -331,36 +356,51 @@ class EditableTable extends React.Component<
   };
 
   updateExchanges = async () => {
+    this.setState({ isMarketsLoading: true });
     message.info('Checking valid exchanges...');
     const { validExchanges } = await ping();
-    const exchanges: string[] = validExchanges.map(exchange => exchange.exchange);
+    const exchanges: string[] = validExchanges.map(
+      (exchange) => exchange.exchange
+    );
     message.info('Loading markets data...');
-    let exchangeMarkets = await fetchMarkets(exchanges);
-    // const jsonStr = JSON.stringify(exchangeMarkets);
-    // exchangeMarkets = JSON.parse(jsonStr);
-    const pairMap: Map<string, Map<string, string[]>> = new Map();
-    console.log(exchangeMarkets)
-    console.log(exchangeMarkets.length)
-    Object.entries(exchangeMarkets).forEach(entry => {
-      const exchange = entry[1];
-      exchange.markets.forEach(market => {
-        const base = market.base;
-        const quote = market.quote;
-        if (pairMap.has(base)) {
-          const quotes: Map<string, string[]> | undefined = pairMap.get(base);
-          if (quotes?.has(quote)) {
-            const es = quotes.get(quote);
-            es?.push(exchange.exchange);
+    await fetchMarkets(exchanges, (exchangeMarkets: Markets[]) => {
+      const markets: BaseAndQuotes[] = [];
+      exchangeMarkets.forEach((exchangeMarket) =>
+        exchangeMarket.markets.forEach((market) => {
+          let pair: BaseAndQuotes = markets.filter(
+            (p) => p.base === market.base
+          )[0];
+          if (pair === undefined) {
+            pair = {
+              base: market.base,
+              quotes: [],
+            };
+            markets.push(pair);
           }
-        } else {
-          const quoteMap: Map<string, string[]> = new Map();
-          quoteMap.set(quote, [exchange.exchange]);
-          pairMap.set(base, quoteMap);
-        }
-      });
+          let quote: QuoteAndExchages = pair.quotes.filter(
+            (q) => q.quote === market.quote
+          )[0];
+          if (quote === undefined) {
+            quote = {
+              quote: market.quote,
+              exchanges: [],
+            };
+            pair.quotes.push(quote);
+          }
+          let exchange: string = quote.exchanges.filter(
+            (e) => e === exchangeMarket.exchange
+          )[0];
+          if (exchange === undefined) {
+            exchange = exchangeMarket.exchange;
+            quote.exchanges.push(exchange);
+          }
+        })
+      );
+      this.setState({ markets, isMarketsLoading: false });
+      // store.set(config.MARKETS, markets);
+      // ipcRenderer.send('updateMarkets');
     });
-    console.log(pairMap);
-  }
+  };
 
   onSortEnd = ({ oldIndex, newIndex }) => {
     const { dataSource } = this.state;
@@ -394,7 +434,7 @@ class EditableTable extends React.Component<
   };
 
   render() {
-    const { dataSource } = this.state;
+    const { dataSource, markets, isMarketsLoading } = this.state;
     const components = {
       body: {
         wrapper: this.DraggableContainer,
@@ -420,14 +460,18 @@ class EditableTable extends React.Component<
     });
     return (
       <div>
-        <button
-          type="button"
-          className="btn btn-default"
-          style={{ margin: 10, float: 'right' }}
-          onClick={this.updateExchanges}
-        >
-          Update exchanges
-        </button>
+        <MarketsContext.Provider value={markets}>
+          <button
+            type="button"
+            className="btn btn-default"
+            style={{ margin: 10, float: 'right' }}
+            onClick={this.updateExchanges}
+          >
+            <Spin spinning={isMarketsLoading} size="small">
+              Update exchanges
+            </Spin>
+          </button>
+        </MarketsContext.Provider>
         <button
           type="button"
           className="btn btn-primary"
