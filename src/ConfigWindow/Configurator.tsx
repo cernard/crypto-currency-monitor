@@ -2,8 +2,11 @@
 import React, { useState } from 'react';
 import { Spin, Modal, Collapse, Input } from 'antd';
 import EditableTable from './EditableTable';
+import Store from 'electron-store';
 import '../App.global.css';
 import './ConfiguratorStyle.css';
+
+const store = new Store();
 
 const { Panel } = Collapse;
 const DonatePanelContent = (
@@ -58,6 +61,15 @@ function renderAboutPanel() {
         </div>
       </div>
       <div className="paragraph">
+      <button
+          className="btn btn-default"
+          style={{ marginRight: 10 }}
+          onClick={() =>
+            store.clear()
+          }
+        >
+          Clean data
+        </button>
         <button
           className="btn btn-positive"
           style={{ marginRight: 10 }}

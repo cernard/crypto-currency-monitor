@@ -9,19 +9,13 @@ import {
 } from 'react-sortable-hoc';
 import arrayMove from 'array-move';
 import Store from 'electron-store';
-import { ipcRenderer } from 'electron';
 import { ping, fetchMarkets, Markets } from '../utils/ccxt_util';
 import config from '../config';
 
 const store = new Store();
 
 const EditableContext = React.createContext<FormInstance<any> | null>(null);
-const MarketsContext = React.createContext<BaseAndQuotes[]>([
-  {
-    base: 'TEST',
-    quotes: [],
-  },
-]);
+const MarketsContext = React.createContext<BaseAndQuotes[]>([]);
 interface Item {
   key: string;
   base: string;
@@ -56,6 +50,7 @@ const EditableCell: React.FC<EditableCellProps> = ({
   const [editing, setEditing] = useState(false);
   const inputRef = useRef<Input>(null);
   const form = useContext(EditableContext)!;
+
   const markets = useContext(MarketsContext);
 
   useEffect(() => {
@@ -72,7 +67,6 @@ const EditableCell: React.FC<EditableCellProps> = ({
   const save = async () => {
     try {
       const values = await form.validateFields();
-
       toggleEdit();
       handleSave({ ...record, ...values });
     } catch (errInfo) {
@@ -80,6 +74,14 @@ const EditableCell: React.FC<EditableCellProps> = ({
     }
   };
 
+  let baseAndQuotes: BaseAndQuotes | undefined = undefined;
+  let quoteAndExchanges: QuoteAndExchages | undefined = undefined;
+  if (record) {
+    baseAndQuotes = markets.filter(maket => maket.base === record.base)[0];
+    if (baseAndQuotes) {
+      quoteAndExchanges = baseAndQuotes.quotes.filter(quote => quote.quote === record.quote)[0];
+    }
+  }
   let childNode = children;
   let editableChild = null;
   if (editable) {
@@ -119,8 +121,13 @@ const EditableCell: React.FC<EditableCellProps> = ({
             ]}
           >
             <Select ref={inputRef} onBlur={save} showSearch>
-              <Option value="BTC">BTC</Option>
-              <Option value="USDT">USDT</Option>
+              {
+                baseAndQuotes && baseAndQuotes.quotes.map(quote => (
+                  <Option value={quote.quote} key={quote.quote}>
+                    {quote.quote}
+                  </Option>
+                ))
+              }
             </Select>
           </Form.Item>
         );
@@ -176,10 +183,17 @@ const EditableCell: React.FC<EditableCellProps> = ({
                 message: `Exchange is required.`,
               },
             ]}
+            initialValue='auto'
           >
             <Select ref={inputRef} onBlur={save} showSearch>
-              <Option value="auto">Auto</Option>
-              <Option value="biance">Biance</Option>
+              <Option value="auto" key="auto">auto</Option>
+              {
+                quoteAndExchanges && quoteAndExchanges.exchanges.map(exchange => (
+                  <Option value={exchange.name} key={exchange.name}>
+                    {exchange.name}
+                  </Option>
+                ))
+              }
             </Select>
           </Form.Item>
         );
@@ -201,7 +215,7 @@ const EditableCell: React.FC<EditableCellProps> = ({
 
 type EditableTableProps = Parameters<typeof Table>[0];
 
-interface DataType {
+export interface DataType {
   key: React.Key;
   base: string;
   quote: string;
@@ -237,11 +251,16 @@ const EditableRow: React.FC<EditableRowProps> = ({ index, ...props }) => {
     </Form>
   );
 };
-interface QuoteAndExchages {
-  quote: string;
-  exchanges: string[];
+interface Exchange {
+  name: string;
+  delay: number;
 }
-interface BaseAndQuotes {
+export interface QuoteAndExchages {
+  quote: string;
+  exchanges: Exchange[];
+  symbol: string;
+}
+export interface BaseAndQuotes {
   base: string;
   quotes: QuoteAndExchages[];
 }
@@ -273,6 +292,12 @@ class EditableTable extends React.Component<
         editable: true,
       },
       {
+        title: 'Exchange',
+        dataIndex: 'exchange',
+        editable: true,
+        width: 150,
+      },
+      {
         title: 'Purchase price',
         dataIndex: 'pp',
         editable: true,
@@ -280,11 +305,6 @@ class EditableTable extends React.Component<
       {
         title: 'Amount',
         dataIndex: 'amount',
-        editable: true,
-      },
-      {
-        title: 'Exchange',
-        dataIndex: 'exchange',
         editable: true,
       },
       {
@@ -314,16 +334,38 @@ class EditableTable extends React.Component<
         //   index: 0
         // }
       ],
-      count: 2,
+      count: 0,
       markets: [],
       isMarketsLoading: false,
     };
+  }
+
+  componentDidMount() {
+    let { markets, dataSource } = this.state;
+    if (markets.length === 0) {
+      const savedMarkets = store.get(config.MARKETS);
+      if (savedMarkets != undefined) {
+        this.setState({ markets: savedMarkets });
+      }
+    }
+    if (dataSource.length === 0) {
+      const savedMonitoringMarkets = store.get(config.MONITORING_MARKETS);
+      if (savedMonitoringMarkets != undefined) {
+        if (savedMonitoringMarkets.length === 0) {
+          this.setState({ dataSource: savedMonitoringMarkets, count: 0 });
+        } else {
+          this.setState({ dataSource: savedMonitoringMarkets, count: savedMonitoringMarkets.sort((a, b) => b.key - a.key)[0].key + 1});
+        }
+      }
+    }
   }
 
   handleDelete = (key: React.Key) => {
     const dataSource = [...this.state.dataSource];
     this.setState({
       dataSource: dataSource.filter((item) => item.key !== key),
+    }, () => {
+      store.set(config.MONITORING_MARKETS, this.state.dataSource);
     });
   };
 
@@ -341,6 +383,8 @@ class EditableTable extends React.Component<
     this.setState({
       dataSource: [...dataSource, newData],
       count: count + 1,
+    }, () => {
+      store.set(config.MONITORING_MARKETS, this.state.dataSource);
     });
   };
 
@@ -352,17 +396,17 @@ class EditableTable extends React.Component<
       ...item,
       ...row,
     });
-    this.setState({ dataSource: newData });
+    this.setState({ dataSource: newData }, () => {
+      store.set(config.MONITORING_MARKETS, this.state.dataSource);
+    });
   };
 
   updateExchanges = async () => {
     this.setState({ isMarketsLoading: true });
-    message.info('Checking valid exchanges...');
     const { validExchanges } = await ping();
     const exchanges: string[] = validExchanges.map(
       (exchange) => exchange.exchange
     );
-    message.info('Loading markets data...');
     await fetchMarkets(exchanges, (exchangeMarkets: Markets[]) => {
       const markets: BaseAndQuotes[] = [];
       exchangeMarkets.forEach((exchangeMarket) =>
@@ -384,20 +428,26 @@ class EditableTable extends React.Component<
             quote = {
               quote: market.quote,
               exchanges: [],
+              symbol: market.symbol,
             };
             pair.quotes.push(quote);
           }
-          let exchange: string = quote.exchanges.filter(
-            (e) => e === exchangeMarket.exchange
+          let exchange: Exchange = quote.exchanges.filter(
+            (e) => e.name === exchangeMarket.exchange
           )[0];
           if (exchange === undefined) {
-            exchange = exchangeMarket.exchange;
+            exchange = {
+              name: exchangeMarket.exchange,
+              delay: validExchanges.filter(ve => ve.exchange === exchangeMarket.exchange)[0].delay,
+            };
             quote.exchanges.push(exchange);
           }
         })
       );
-      this.setState({ markets, isMarketsLoading: false });
-      // store.set(config.MARKETS, markets);
+      this.setState({ markets, isMarketsLoading: false }, () => {
+        store.set(config.MARKETS, this.state.markets);
+      });
+      message.success('Exchange and market have been updated.');
       // ipcRenderer.send('updateMarkets');
     });
   };
@@ -410,7 +460,9 @@ class EditableTable extends React.Component<
         oldIndex,
         newIndex
       ).filter((el) => !!el);
-      this.setState({ dataSource: newData });
+      this.setState({ dataSource: newData }, () => {
+        store.set(config.MONITORING_MARKETS, this.state.dataSource);
+      });
     }
   };
 
@@ -459,36 +511,39 @@ class EditableTable extends React.Component<
       };
     });
     return (
-      <div>
-        <MarketsContext.Provider value={markets}>
+      <MarketsContext.Provider value={markets}>
+        <div>
           <button
             type="button"
             className="btn btn-default"
             style={{ margin: 10, float: 'right' }}
             onClick={this.updateExchanges}
+            disabled={isMarketsLoading}
           >
             <Spin spinning={isMarketsLoading} size="small">
-              Update exchanges
+              Update markets
             </Spin>
           </button>
-        </MarketsContext.Provider>
-        <button
-          type="button"
-          className="btn btn-primary"
-          style={{ margin: 10, float: 'right' }}
-          onClick={this.handleAdd}
-        >
-          Add one
-        </button>
-        <Table
-          sticky
-          components={components}
-          bordered
-          pagination={false}
-          dataSource={dataSource}
-          columns={columns as ColumnTypes}
-        />
-      </div>
+          <button
+            type="button"
+            className="btn btn-primary"
+            style={{ margin: 10, float: 'right' }}
+            onClick={this.handleAdd}
+          >
+            Add one
+          </button>
+          <Table
+            sticky
+            components={components}
+            bordered
+            pagination={false}
+            dataSource={dataSource}
+            columns={columns as ColumnTypes}
+            loading={isMarketsLoading}
+          />
+        </div>
+      </MarketsContext.Provider>
+
     );
   }
 }

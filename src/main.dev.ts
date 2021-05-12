@@ -11,7 +11,7 @@
 import 'core-js/stable';
 import 'regenerator-runtime/runtime';
 import path from 'path';
-import { app, BrowserWindow, shell, ipcMain } from 'electron';
+import { app, BrowserWindow, shell, ipcMain, Notification } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 import Store from 'electron-store';
@@ -24,9 +24,19 @@ import fetch from 'electron-fetch';
 //   createAliasedAction
 // } from 'electron-redux';
 import { Currency, KData, Pair } from './Entities';
+import {
+  DataType as MonitoringMarket,
+  BaseAndQuotes as Market,
+  QuoteAndExchages,
+} from './ConfigWindow/EditableTable';
 import config from './config';
 import MenuBuilder from './menu';
 import SyncQueue from './SyncQueue';
+import {} from './utils/ccxt_util';
+import { Exchange } from 'ccxt';
+import { isEmpty } from 'lodash';
+
+const ccxt = require('ccxt');
 
 const store = new Store();
 // const reducers = require('../reducers');
@@ -334,124 +344,156 @@ let waitLock = false;
 const taskQueue: SyncQueue = new SyncQueue();
 const priceChangeIn24HQueue: SyncQueue = new SyncQueue();
 
-// if api response error, wait 2s.
-const wait = () => {
-  waitLock = true;
-  setTimeout(() => {
-    waitLock = false;
-  }, 2000);
-};
-/*
-// Update average transaction price
-const avgPriceAPI = 'https://api.binance.com/api/v3/avgPrice'
+interface MarketData {
+  base: string;
+  quote: string;
+  exchange: string;
+  currentPrice: number;
+  purchasePrice: number;
+  amount: number;
+  changePercent: number;
+  kData: any;
+}
 
-// Follow line is used for test
-store.set(PAIRS, [new Pair('BTC')])
+// symbol: Exchange instance
+const exchangeInstanceMap: Map<string, Exchange | undefined> = new Map();
+interface _Exchange {
+  name: string;
+  delay: number;
+}
+let reachableExchangesMap: Map<string, _Exchange[]> = store.get(config.REACHABLE_EXCHANGES);
+if (isEmpty(reachableExchangesMap)) reachableExchangesMap = new Map();
 
-// Start timing task by default
-setInterval(() => {
-  if (!waitLock) {
-    const pairs: Pair[] = store.get(PAIRS) ?? [];
+const updateMarketsData = (monitoringMarkets: MonitoringMarket[]) => {
+  monitoringMarkets.forEach(async (monitoringMarket) => {
+    let exchangeName = monitoringMarket.exchange;
+    let symbol = `${monitoringMarket.base}/${monitoringMarket.quote}`;
+    // if user not configure the exchange, find the exchange with lowest delay
+    if (monitoringMarket.exchange === 'auto') {
+      const markets: Market[] = store.get(config.MARKETS);
+      if (isEmpty(markets)) {
+        new Notification({
+          title: 'Market data not found!',
+          body: 'Please load market data.',
+        });
+        // TODO: clear interval
+        return;
+      }
+      const market: Market = markets.filter(
+        (market) => market.base === monitoringMarket.base
+      )[0];
+      if (isEmpty(market)) return;
 
-    pairs.forEach(pair => taskQueue.add(() => {
-      fetch(avgPriceAPI + `?symbol=${pair.pair}`)
-      .then(rep => rep.json())
-      .then(data => {
-        // Get currency obj from store, if currency is not defined, pass a new currency instrance and save it.
-        const currency: Currency = store.get(pair.pair) ?? new Currency(pair);
-        currency.avgPrice = parseFloat(data['price']);
-        store.set(pair.pair, currency);
+      const quote: QuoteAndExchages = market.quotes.filter(
+        (quote) => quote.quote === monitoringMarket.quote
+      )[0];
+      if (isEmpty(quote)) return;
 
-        notifyAll();
-      })
-      .catch(err => {
-        // if fetch got error, print it and wait 2000 second, because of binance has limited api request frequency.
-        log.error(err);
-        wait();
-      })
-    }));
-  }
-}, 2000);
- */
-// Update K line data in past 24 hours
-const kLineDataAPI = 'https://api.binance.com/api/v3/klines';
-const interval = '1h';
-const endTime: number = Date.now();
-const startTime: number = endTime - 86400000; // 24h ago
+      if (!isEmpty(quote.symbol)) symbol = quote.symbol;;
 
-// Start timing task by default
-setInterval(() => {
-  if (!waitLock) {
-    const pairs: Pair[] = store.get(PAIRS) ?? [];
-
-    pairs.forEach((pair) =>
-      taskQueue.add(() => {
-        fetch(
-          `${kLineDataAPI}?symbol=${pair.pair}&interval=${interval}&startTime=${startTime}&endTime=${endTime}`
-        )
-          .then((rep) => rep.json())
-          .then((data: any) => {
-            if (data.code) {
-              throw new Error(data.msg);
-            }
-            // Get currency obj from store, if currency is not defined, pass a new currency instrance and save it.
-            const currency: Currency =
-              store.get(pair.pair) ?? new Currency(pair);
-            currency.pair = pair;
-            const x: string[] = [];
-            const y: number[] = [];
-            data.forEach((item: any) => {
-              x.push(item[0]); // Opening time
-              y.push(parseFloat(item[1])); // Opening price
+      const sortedExchanges = quote.exchanges.sort(
+        (a, b) => b.delay - a.delay
+      );
+      if (isEmpty(sortedExchanges)) return;
+      // Initial reachableExchangesMap
+      if (reachableExchangesMap.size === 0) {
+        sortedExchanges.forEach(exchange => {
+          if (reachableExchangesMap.has(symbol)) {
+            const exchanges: _Exchange[] = reachableExchangesMap.get(symbol);
+            exchanges.push({
+              name: exchange.name,
+              delay: exchange.delay,
             });
-            const kData: KData = new KData(x, y);
-            currency.kData = kData;
-            store.set(pair.pair, currency);
+            reachableExchangesMap.set(symbol, exchanges);
+          } else {
+            const exchanges: _Exchange[] = [{
+              name: exchange.name,
+              delay: exchange.delay,
+            }];
+            reachableExchangesMap.set(symbol, exchanges);
+          }
+        });
+      }
+    }
 
-            notifyAll();
-          })
-          .catch((err) => {
-            // if fetch got error, print it and wait 2000 second, because of binance has limited api request frequency.
-            log.error(err);
-            wait();
-          });
+
+    const reachableExchanges: _Exchange[] = reachableExchangesMap.get(symbol);
+    const newReachableExchanges: _Exchange[] = reachableExchanges.slice();
+
+    let isBreak = false;
+
+    // try to use cached instance, avoid request too much.
+    let cachedExchangeInstance: Exchange = exchangeInstanceMap.get(symbol);
+    if (cachedExchangeInstance) {
+      log.info(`Cached exchange: ${cachedExchangeInstance.name}`);
+      await Promise.all([
+        cachedExchangeInstance.fetchTicker(symbol)
+      ])
+      .then(([tickerData]) => {
+        console.log('cached done.')
+        // TODO: Process
       })
-    );
-  }
-}, 2000);
-
-// Update the price changed compare with the last day.
-const priceChangeIn24HAPI = 'https://api.binance.com/api/v3/ticker/24hr';
-// Start timing task by default
-setInterval(() => {
-  if (!waitLock) {
-    const pairs: Pair[] = store.get(PAIRS) ?? [];
-
-    pairs.forEach((pair: Pair) =>
-      priceChangeIn24HQueue.add(() => {
-        fetch(`${priceChangeIn24HAPI}?symbol=${pair.pair}`)
-          .then((rep) => rep.json())
-          .then((data) => {
-            if (data.code) {
-              throw new Error(data.msg);
-            }
-            // Get currency obj from store, if currency is not defined, pass a new currency instrance and save it.
-            const currency: Currency =
-              store.get(pair.pair) ?? new Currency(pair);
-            currency.pair = pair;
-            currency.priceChangePrecentIn24H = data.priceChangePercent;
-            currency.volume = parseFloat(data.volume);
-            currency.avgPrice = parseFloat(data.lastPrice);
-            store.set(pair.pair, currency);
-
-            notifyAll();
+      .catch(async err => {
+        log.info(`Exchange invalid: ${cachedExchangeInstance.name}`)
+        for (let i in reachableExchanges) {
+          if (isBreak) break;
+          const exchangeInstance: Exchange = new ccxt[reachableExchanges[i].name]();
+          await Promise.all([
+            exchangeInstance.fetchTicker(symbol)
+          ])
+          .then(([tickerData]) => {
+            isBreak = true;
+            log.info(`Cached exchange has change to ${exchangeInstance.name}`)
+            // TODO: Process
+            // add to cache
+            exchangeInstanceMap.set(symbol, exchangeInstance);
+            // update reachable exchanges
+            reachableExchangesMap.set(config.REACHABLE_EXCHANGES, newReachableExchanges);
           })
-          .catch((err) => {
-            // if fetch got error, print it and wait 2000 second, because of binance has limited api request frequency.
-            log.error(err);
-            wait();
+          .catch(err => {
+            const invalidExchange = newReachableExchanges.shift();
+            log.error('Invalid exchange: ', invalidExchange?.name);
           });
-      })
-    );
-  }
-}, 2000);
+        }
+      });
+    } else {
+      log.info(`No cached exchange instance.`);
+      for (let i in reachableExchanges) {
+        if (isBreak) break;
+        log.info(`Try to change exchange to ${reachableExchanges[i].name}`);
+        const exchangeInstance: Exchange = new ccxt[reachableExchanges[i].name]();
+        await Promise.all([
+          exchangeInstance.fetchTicker(symbol)
+        ])
+        .then(([tickerData]) => {
+          isBreak = true;
+          log.info(`Cached exchange has changed to ${exchangeInstance.name}`)
+          // TODO: Process
+
+          // add to cache
+          exchangeInstanceMap.set(symbol, exchangeInstance);
+          reachableExchangesMap.set(config.REACHABLE_EXCHANGES, newReachableExchanges);
+        })
+        .catch(err => {
+          const invalidExchange = newReachableExchanges.shift();
+          console.log('[DEBUG]Invalid exchange: ', invalidExchange);
+        });
+      }
+    }
+    // const name = `${monitoringMarket.base}/${monitoringMarket.quote}`;
+    // let marketsData: Map<string, MarketData> = store.get(config.MARKETS_DATA);
+  });
+};
+
+updateMarketsData([{
+  key: 0,
+  base: 'BTC',
+  quote: 'USDT',
+  pp: 0,
+  amount: 0,
+  exchange: 'auto',
+  index: 0,
+}]);
+// store.onDidChange(config.MONITORING_MARKETS, (monitoringMarkets: MonitoringMarket[] | unknown) => {
+
+// });
