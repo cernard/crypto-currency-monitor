@@ -23,6 +23,8 @@ import fetch from 'electron-fetch';
 //   replayActionMain,
 //   createAliasedAction
 // } from 'electron-redux';
+import { Exchange, Ticker } from 'ccxt';
+import _, { isEmpty } from 'lodash';
 import { Currency, KData, Pair } from './Entities';
 import {
   DataType as MonitoringMarket,
@@ -33,8 +35,6 @@ import config from './config';
 import MenuBuilder from './menu';
 import SyncQueue from './SyncQueue';
 import {} from './utils/ccxt_util';
-import { Exchange, Ticker } from 'ccxt';
-import { isEmpty } from 'lodash';
 
 const ccxt = require('ccxt');
 
@@ -253,7 +253,6 @@ const createWindow = async () => {
     event.preventDefault();
     shell.openExternal(url);
   });
-
   // Remove this if your app does not use auto updates
   // eslint-disable-next-line
   new AppUpdater();
@@ -340,7 +339,7 @@ const notifyAll = () => {
  * Shared data between the different windows.
  */
 const { PAIRS } = config;
-let waitLock = false;
+const waitLock = false;
 const taskQueue: SyncQueue = new SyncQueue();
 const priceChangeIn24HQueue: SyncQueue = new SyncQueue();
 
@@ -351,8 +350,9 @@ interface MarketData {
   currentPrice: number;
   purchasePrice: number;
   amount: number;
-  changePercent: number;
-  kData: any;
+  changePercent?: number;
+  kData?: any;
+  symbol: string;
 }
 
 // symbol: Exchange instance
@@ -361,135 +361,155 @@ interface _Exchange {
   name: string;
   delay: number;
 }
-let reachableExchangesMap: Map<string, _Exchange[]> = store.get(config.REACHABLE_EXCHANGES);
-if (isEmpty(reachableExchangesMap)) reachableExchangesMap = new Map();
+let reachableExchangesMap = store.get(
+  config.REACHABLE_EXCHANGES
+);
+if (isEmpty(reachableExchangesMap)) reachableExchangesMap = {};
 
 const updateMarketsData = (monitoringMarkets: MonitoringMarket[]) => {
+  log.info('Update Markets Data');
   monitoringMarkets.forEach(async (monitoringMarket) => {
-    let exchangeName = monitoringMarket.exchange;
+    const exchangeName = monitoringMarket.exchange;
     let symbol = `${monitoringMarket.base}/${monitoringMarket.quote}`;
+    const markets: Market[] = store.get(config.MARKETS);
+    if (isEmpty(markets)) {
+      // const notification = new Notification({
+      //   title: 'Market data not found!',
+      //   body: 'Please load market data.',
+      // });
+      // TODO: clear interval
+      return;
+    }
+    const market: Market = markets.filter(
+      (m) => m.base === monitoringMarket.base
+    )[0];
+    if (isEmpty(market)) return;
+
+    const quote: QuoteAndExchages = market.quotes.filter(
+      (q) => q.quote === monitoringMarket.quote
+    )[0];
+    if (isEmpty(quote)) return;
+
+    if (!isEmpty(quote.symbol)) symbol = quote.symbol;
     // if user not configure the exchange, find the exchange with lowest delay
-    if (monitoringMarket.exchange === 'auto') {
-      const markets: Market[] = store.get(config.MARKETS);
-      if (isEmpty(markets)) {
-        new Notification({
-          title: 'Market data not found!',
-          body: 'Please load market data.',
-        });
-        // TODO: clear interval
-        return;
-      }
-      const market: Market = markets.filter(
-        (market) => market.base === monitoringMarket.base
-      )[0];
-      if (isEmpty(market)) return;
-
-      const quote: QuoteAndExchages = market.quotes.filter(
-        (quote) => quote.quote === monitoringMarket.quote
-      )[0];
-      if (isEmpty(quote)) return;
-
-      if (!isEmpty(quote.symbol)) symbol = quote.symbol;;
-
-      const sortedExchanges = quote.exchanges.sort(
-        (a, b) => b.delay - a.delay
-      );
+    // Initial reachableExchangesMap
+    if (Object.keys(reachableExchangesMap).length === 0) {
+      const sortedExchanges = quote.exchanges.sort((a, b) => b.delay - a.delay);
+      log.info(1);
       if (isEmpty(sortedExchanges)) return;
-      // Initial reachableExchangesMap
-      if (reachableExchangesMap.size === 0) {
-        sortedExchanges.forEach(exchange => {
-          log.info(exchange);
-          if (reachableExchangesMap.has(symbol)) {
-            const exchanges: _Exchange[] = reachableExchangesMap.get(symbol);
-            exchanges.push({
+      log.info(2);
+      sortedExchanges.forEach((exchange) => {
+        log.info(3);
+        let exchanges: _Exchange[] = [];
+        if (Object.keys(reachableExchangesMap).includes(symbol)) {
+          log.info(4);
+          exchanges = reachableExchangesMap[symbol];
+          exchanges.push({
+            name: exchange.name,
+            delay: exchange.delay,
+          });
+        } else {
+          log.info(5);
+          exchanges = [
+            {
               name: exchange.name,
               delay: exchange.delay,
-            });
-            reachableExchangesMap.set(symbol, exchanges);
-          } else {
-            const exchanges: _Exchange[] = [{
-              name: exchange.name,
-              delay: exchange.delay,
-            }];
-            reachableExchangesMap.set(symbol, exchanges);
-          }
-        });
-
-      }
+            },
+          ];
+        }
+        reachableExchangesMap = {
+          ...reachableExchangesMap,
+          [symbol]: exchanges,
+        };
+      });
     }
 
-
-    const reachableExchanges: _Exchange[] = reachableExchangesMap.get(symbol);
+    // TODO: reachableExchangesMap is undefined
+    log.info('Symbol: ', symbol);
+    log.info('ReachableExchange: ', reachableExchangesMap);
+    const reachableExchanges: _Exchange[] = reachableExchangesMap[symbol];
     const newReachableExchanges: _Exchange[] = reachableExchanges.slice();
 
     let isBreak = false;
 
     // try to use cached instance, avoid request too much.
     let cachedExchangeInstance: Exchange = exchangeInstanceMap.get(symbol);
-    log.info(reachableExchangesMap);
-    if (cachedExchangeInstance) {
-      // Handle user specified exchange
-      if (cachedExchangeInstance.name !== exchangeName && reachableExchanges.map(r => r.name).includes(exchangeName)) {
+    // Handle user specified exchange
+    if (isEmpty(cachedExchangeInstance)) {
+      if (reachableExchanges.map((r) => r.name).includes(exchangeName)) {
         log.info(`Use user specified exchange: ${exchangeName}`);
         cachedExchangeInstance = new ccxt[exchangeName]();
         exchangeInstanceMap.set(symbol, cachedExchangeInstance);
-      } else {
-        log.warn(`Exchange ${exchangeName} is an invalid exchange.`);
       }
+    }
+
+    if (cachedExchangeInstance) {
       log.info(`Use cached exchange: ${cachedExchangeInstance.name}`);
-      await Promise.all([
-        cachedExchangeInstance.fetchTicker(symbol)
-      ])
-      .then(([tickerData]) => {
-        processData(tickerData);
-        // TODO: Process
-      })
-      .catch(async err => {
-        log.info(`Exchange invalid: ${cachedExchangeInstance.name}`)
-        for (let i in reachableExchanges) {
-          if (isBreak) break;
-          const exchangeInstance: Exchange = new ccxt[reachableExchanges[i].name]();
-          await Promise.all([
-            exchangeInstance.fetchTicker(symbol)
-          ])
-          .then(([tickerData]) => {
-            isBreak = true;
-            log.info(`Cached exchange has change to ${exchangeInstance.name}`)
-            // TODO: Process
-            processData(tickerData);
-            // add to cache
-            exchangeInstanceMap.set(symbol, exchangeInstance);
-            // update reachable exchanges
-            reachableExchangesMap.set(config.REACHABLE_EXCHANGES, newReachableExchanges);
-          })
-          .catch(err => {
-            const invalidExchange = newReachableExchanges.shift();
-            log.error('Invalid exchange: ', invalidExchange?.name);
-          });
-        }
-      });
+      await Promise.all([cachedExchangeInstance.fetchTicker(symbol)])
+        .then(([tickerData]) => {
+          processData(monitoringMarket, tickerData);
+          return true;
+          // TODO: Process
+        })
+        .catch(async (err) => {
+          log.error(err);
+          log.info(`Exchange invalid: ${cachedExchangeInstance.name}`);
+          for (const i in reachableExchanges) {
+            if (isBreak) break;
+            const exchangeInstance: Exchange = new ccxt[
+              reachableExchanges[i].name
+            ]();
+            await Promise.all([exchangeInstance.fetchTicker(symbol)])
+              .then(([tickerData]) => {
+                isBreak = true;
+                log.info(
+                  `Cached exchange has change to ${exchangeInstance.name}`
+                );
+                // TODO: Process
+                processData(monitoringMarket, tickerData);
+                // add to cache
+                exchangeInstanceMap.set(symbol, exchangeInstance);
+                // update reachable exchanges
+                reachableExchangesMap.set(
+                  config.REACHABLE_EXCHANGES,
+                  newReachableExchanges
+                );
+              })
+              .catch((err) => {
+                log.error(err);
+                const invalidExchange = newReachableExchanges.shift();
+                log.error('Invalid exchange: ', invalidExchange?.name);
+              });
+          }
+        });
     } else {
       log.info(`No cached exchange instance.`);
-      for (let i in reachableExchanges) {
+      for (const i in reachableExchanges) {
         if (isBreak) break;
         log.info(`Try to change exchange to ${reachableExchanges[i].name}`);
-        const exchangeInstance: Exchange = new ccxt[reachableExchanges[i].name]();
-        await Promise.all([
-          exchangeInstance.fetchTicker(symbol)
-        ])
-        .then(([tickerData]) => {
-          isBreak = true;
-          log.info(`Cached exchange has changed to ${exchangeInstance.name}`)
-          // TODO: Process
-          processData(tickerData);
-          // add to cache
-          exchangeInstanceMap.set(symbol, exchangeInstance);
-          reachableExchangesMap.set(config.REACHABLE_EXCHANGES, newReachableExchanges);
-        })
-        .catch(err => {
-          const invalidExchange = newReachableExchanges.shift();
-          log.error('Invalid exchange: ', invalidExchange);
-        });
+        const exchangeInstance: Exchange = new ccxt[
+          reachableExchanges[i].name
+        ]();
+        await Promise.all([exchangeInstance.fetchTicker(symbol)])
+          .then(([tickerData]) => {
+            isBreak = true;
+            log.info(`Cached exchange has changed to ${exchangeInstance.name}`);
+            // TODO: Process
+            processData(monitoringMarket, tickerData);
+            // add to cache
+            exchangeInstanceMap.set(symbol, exchangeInstance);
+            reachableExchangesMap.set(
+              config.REACHABLE_EXCHANGES,
+              newReachableExchanges
+            );
+
+            return true;
+          })
+          .catch((err) => {
+            log.error(err);
+            const invalidExchange = newReachableExchanges.shift();
+            log.error('Invalid exchange: ', invalidExchange);
+          });
       }
     }
     // const name = `${monitoringMarket.base}/${monitoringMarket.quote}`;
@@ -497,19 +517,54 @@ const updateMarketsData = (monitoringMarkets: MonitoringMarket[]) => {
   });
 };
 
-function processData(tickerData: Ticker) {
-
+function processData(monitoringMarket: MonitoringMarket, tickerData: Ticker) {
+  let savedMarketDatas: MarketData[] = store.get(config.MARKETS_DATA);
+  if (isEmpty(savedMarketDatas)) {
+    savedMarketDatas = [];
+  }
+  const savedMarketData: MarketData = savedMarketDatas.filter(
+    (marketData) => marketData.symbol === tickerData.symbol
+  )[0];
+  if (isEmpty(savedMarketData)) {
+    savedMarketDatas.push({
+      base: monitoringMarket.base,
+      quote: monitoringMarket.quote,
+      exchange: monitoringMarket.exchange,
+      currentPrice: tickerData.average ? tickerData.average : tickerData.high,
+      purchasePrice: monitoringMarket.pp,
+      amount: monitoringMarket.amount,
+      changePercent: tickerData.percentage,
+      kData: [],
+      symbol: tickerData.symbol,
+    });
+  } else {
+    savedMarketData.base = monitoringMarket.base;
+    savedMarketData.quote = monitoringMarket.quote;
+    savedMarketData.exchange = monitoringMarket.exchange;
+    savedMarketData.currentPrice = tickerData.average
+      ? tickerData.average
+      : tickerData.high;
+    savedMarketData.purchasePrice = monitoringMarket.pp;
+    savedMarketData.amount = monitoringMarket.amount;
+    savedMarketData.changePercent = tickerData.percentage;
+    savedMarketData.symbol = tickerData.symbol;
+  }
+  store.set(config.MARKETS_DATA, savedMarketDatas);
 }
 
-updateMarketsData([{
-  key: 0,
-  base: 'BTC',
-  quote: 'USDT',
-  pp: 0,
-  amount: 0,
-  exchange: 'auto',
-  index: 0,
-}]);
+function start() {
+  app.interval = setInterval(() => {
+    const monitoringMarkets: MonitoringMarket[] = store.get(
+      config.MONITORING_MARKETS
+    );
+    if (isEmpty(monitoringMarkets)) return;
+    updateMarketsData(monitoringMarkets);
+  }, 1000);
+}
+
+app.on('ready', () => {
+  start();
+});
 // store.onDidChange(config.MONITORING_MARKETS, (monitoringMarkets: MonitoringMarket[] | unknown) => {
 
-// });
+// })
