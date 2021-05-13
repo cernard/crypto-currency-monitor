@@ -33,7 +33,7 @@ import config from './config';
 import MenuBuilder from './menu';
 import SyncQueue from './SyncQueue';
 import {} from './utils/ccxt_util';
-import { Exchange } from 'ccxt';
+import { Exchange, Ticker } from 'ccxt';
 import { isEmpty } from 'lodash';
 
 const ccxt = require('ccxt');
@@ -398,6 +398,7 @@ const updateMarketsData = (monitoringMarkets: MonitoringMarket[]) => {
       // Initial reachableExchangesMap
       if (reachableExchangesMap.size === 0) {
         sortedExchanges.forEach(exchange => {
+          log.info(exchange);
           if (reachableExchangesMap.has(symbol)) {
             const exchanges: _Exchange[] = reachableExchangesMap.get(symbol);
             exchanges.push({
@@ -413,6 +414,7 @@ const updateMarketsData = (monitoringMarkets: MonitoringMarket[]) => {
             reachableExchangesMap.set(symbol, exchanges);
           }
         });
+
       }
     }
 
@@ -424,13 +426,22 @@ const updateMarketsData = (monitoringMarkets: MonitoringMarket[]) => {
 
     // try to use cached instance, avoid request too much.
     let cachedExchangeInstance: Exchange = exchangeInstanceMap.get(symbol);
+    log.info(reachableExchangesMap);
     if (cachedExchangeInstance) {
-      log.info(`Cached exchange: ${cachedExchangeInstance.name}`);
+      // Handle user specified exchange
+      if (cachedExchangeInstance.name !== exchangeName && reachableExchanges.map(r => r.name).includes(exchangeName)) {
+        log.info(`Use user specified exchange: ${exchangeName}`);
+        cachedExchangeInstance = new ccxt[exchangeName]();
+        exchangeInstanceMap.set(symbol, cachedExchangeInstance);
+      } else {
+        log.warn(`Exchange ${exchangeName} is an invalid exchange.`);
+      }
+      log.info(`Use cached exchange: ${cachedExchangeInstance.name}`);
       await Promise.all([
         cachedExchangeInstance.fetchTicker(symbol)
       ])
       .then(([tickerData]) => {
-        console.log('cached done.')
+        processData(tickerData);
         // TODO: Process
       })
       .catch(async err => {
@@ -445,6 +456,7 @@ const updateMarketsData = (monitoringMarkets: MonitoringMarket[]) => {
             isBreak = true;
             log.info(`Cached exchange has change to ${exchangeInstance.name}`)
             // TODO: Process
+            processData(tickerData);
             // add to cache
             exchangeInstanceMap.set(symbol, exchangeInstance);
             // update reachable exchanges
@@ -469,14 +481,14 @@ const updateMarketsData = (monitoringMarkets: MonitoringMarket[]) => {
           isBreak = true;
           log.info(`Cached exchange has changed to ${exchangeInstance.name}`)
           // TODO: Process
-
+          processData(tickerData);
           // add to cache
           exchangeInstanceMap.set(symbol, exchangeInstance);
           reachableExchangesMap.set(config.REACHABLE_EXCHANGES, newReachableExchanges);
         })
         .catch(err => {
           const invalidExchange = newReachableExchanges.shift();
-          console.log('[DEBUG]Invalid exchange: ', invalidExchange);
+          log.error('Invalid exchange: ', invalidExchange);
         });
       }
     }
@@ -484,6 +496,10 @@ const updateMarketsData = (monitoringMarkets: MonitoringMarket[]) => {
     // let marketsData: Map<string, MarketData> = store.get(config.MARKETS_DATA);
   });
 };
+
+function processData(tickerData: Ticker) {
+
+}
 
 updateMarketsData([{
   key: 0,
