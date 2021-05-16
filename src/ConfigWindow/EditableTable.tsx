@@ -251,7 +251,7 @@ const EditableRow: React.FC<EditableRowProps> = ({ index, ...props }) => {
     </Form>
   );
 };
-interface Exchange {
+export interface Exchange {
   name: string;
   delay: number;
 }

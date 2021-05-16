@@ -17,6 +17,18 @@
       "port": 9223,
       "webRoot": "${workspaceFolder}",
       "timeout": 15000
+    },
+    {
+      "name": "Debug Main Process",
+      "type": "node",
+      "request": "launch",
+      "cwd": "${workspaceRoot}",
+      "runtimeExecutable": "${workspaceRoot}/node_modules/.bin/electron",
+      "windows": {
+        "runtimeExecutable": "${workspaceRoot}/node_modules/.bin/electron.cmd"
+      },
+      "program": "${workspaceRoot}/src/main.dev.ts",
+      "protocol": "inspector"
     }
   ],
   "compounds": [

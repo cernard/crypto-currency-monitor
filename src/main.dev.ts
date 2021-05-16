@@ -30,11 +30,11 @@ import {
   DataType as MonitoringMarket,
   BaseAndQuotes as Market,
   QuoteAndExchages,
+  Exchange as _Exchange,
 } from './ConfigWindow/EditableTable';
 import config from './config';
 import MenuBuilder from './menu';
 import SyncQueue from './SyncQueue';
-import {} from './utils/ccxt_util';
 
 const ccxt = require('ccxt');
 
@@ -353,20 +353,17 @@ interface MarketData {
   changePercent?: number;
   kData?: any;
   symbol: string;
+  index: any;
 }
 
 // symbol: Exchange instance
 const exchangeInstanceMap: Map<string, Exchange | undefined> = new Map();
-interface _Exchange {
-  name: string;
-  delay: number;
-}
-let reachableExchangesMap = store.get(
-  config.REACHABLE_EXCHANGES
-);
-if (isEmpty(reachableExchangesMap)) reachableExchangesMap = {};
 
 const updateMarketsData = (monitoringMarkets: MonitoringMarket[]) => {
+  // let reachableExchangesMap: Map<string, _Exchange[]> = store.get(config.REACHABLE_EXCHANGES);
+  let reachableExchangesMap = store.get(config.REACHABLE_EXCHANGES);
+  if (isEmpty(reachableExchangesMap)) reachableExchangesMap = {};
+
   log.info('Update Markets Data');
   monitoringMarkets.forEach(async (monitoringMarket) => {
     const exchangeName = monitoringMarket.exchange;
@@ -393,40 +390,12 @@ const updateMarketsData = (monitoringMarkets: MonitoringMarket[]) => {
     if (!isEmpty(quote.symbol)) symbol = quote.symbol;
     // if user not configure the exchange, find the exchange with lowest delay
     // Initial reachableExchangesMap
-    if (Object.keys(reachableExchangesMap).length === 0) {
-      const sortedExchanges = quote.exchanges.sort((a, b) => b.delay - a.delay);
-      log.info(1);
-      if (isEmpty(sortedExchanges)) return;
-      log.info(2);
-      sortedExchanges.forEach((exchange) => {
-        log.info(3);
-        let exchanges: _Exchange[] = [];
-        if (Object.keys(reachableExchangesMap).includes(symbol)) {
-          log.info(4);
-          exchanges = reachableExchangesMap[symbol];
-          exchanges.push({
-            name: exchange.name,
-            delay: exchange.delay,
-          });
-        } else {
-          log.info(5);
-          exchanges = [
-            {
-              name: exchange.name,
-              delay: exchange.delay,
-            },
-          ];
-        }
-        reachableExchangesMap = {
-          ...reachableExchangesMap,
-          [symbol]: exchanges,
-        };
-      });
+
+    if (!Object.keys(reachableExchangesMap).includes(symbol)) {
+      const sortedExchanges = quote.exchanges.sort((a, b) => a.delay - b.delay);
+      reachableExchangesMap[symbol] = sortedExchanges;
     }
 
-    // TODO: reachableExchangesMap is undefined
-    log.info('Symbol: ', symbol);
-    log.info('ReachableExchange: ', reachableExchangesMap);
     const reachableExchanges: _Exchange[] = reachableExchangesMap[symbol];
     const newReachableExchanges: _Exchange[] = reachableExchanges.slice();
 
@@ -435,21 +404,25 @@ const updateMarketsData = (monitoringMarkets: MonitoringMarket[]) => {
     // try to use cached instance, avoid request too much.
     let cachedExchangeInstance: Exchange = exchangeInstanceMap.get(symbol);
     // Handle user specified exchange
-    if (isEmpty(cachedExchangeInstance)) {
-      if (reachableExchanges.map((r) => r.name).includes(exchangeName)) {
-        log.info(`Use user specified exchange: ${exchangeName}`);
-        cachedExchangeInstance = new ccxt[exchangeName]();
-        exchangeInstanceMap.set(symbol, cachedExchangeInstance);
-      }
+    if (
+      // isEmpty(cachedExchangeInstance) &&
+      exchangeName.toUpperCase() !== 'AUTO' &&
+      // cachedExchangeInstance.name.toUpperCase() !==
+      // exchangeName.toLocaleUpperCase() &&
+      reachableExchanges.map((r) => r.name).includes(exchangeName)
+    ) {
+      log.info(`Use user specified exchange: ${exchangeName}`);
+      cachedExchangeInstance = new ccxt[exchangeName]();
+      exchangeInstanceMap.set(symbol, cachedExchangeInstance);
     }
 
-    if (cachedExchangeInstance) {
+    if (!isEmpty(cachedExchangeInstance)) {
       log.info(`Use cached exchange: ${cachedExchangeInstance.name}`);
       await Promise.all([cachedExchangeInstance.fetchTicker(symbol)])
         .then(([tickerData]) => {
           processData(monitoringMarket, tickerData);
+          store.set(config.REACHABLE_EXCHANGES, reachableExchangesMap);
           return true;
-          // TODO: Process
         })
         .catch(async (err) => {
           log.error(err);
@@ -463,17 +436,14 @@ const updateMarketsData = (monitoringMarkets: MonitoringMarket[]) => {
               .then(([tickerData]) => {
                 isBreak = true;
                 log.info(
-                  `Cached exchange has change to ${exchangeInstance.name}`
+                  `Cached exchange ha s change to ${exchangeInstance.name}`
                 );
-                // TODO: Process
                 processData(monitoringMarket, tickerData);
                 // add to cache
                 exchangeInstanceMap.set(symbol, exchangeInstance);
                 // update reachable exchanges
-                reachableExchangesMap.set(
-                  config.REACHABLE_EXCHANGES,
-                  newReachableExchanges
-                );
+                reachableExchangesMap[symbol] = newReachableExchanges;
+                store.set(config.REACHABLE_EXCHANGES, reachableExchangesMap);
               })
               .catch((err) => {
                 log.error(err);
@@ -494,15 +464,11 @@ const updateMarketsData = (monitoringMarkets: MonitoringMarket[]) => {
           .then(([tickerData]) => {
             isBreak = true;
             log.info(`Cached exchange has changed to ${exchangeInstance.name}`);
-            // TODO: Process
             processData(monitoringMarket, tickerData);
             // add to cache
             exchangeInstanceMap.set(symbol, exchangeInstance);
-            reachableExchangesMap.set(
-              config.REACHABLE_EXCHANGES,
-              newReachableExchanges
-            );
-
+            reachableExchangesMap[symbol] = newReachableExchanges;
+            store.set(config.REACHABLE_EXCHANGES, reachableExchangesMap);
             return true;
           })
           .catch((err) => {
@@ -536,6 +502,7 @@ function processData(monitoringMarket: MonitoringMarket, tickerData: Ticker) {
       changePercent: tickerData.percentage,
       kData: [],
       symbol: tickerData.symbol,
+      index: monitoringMarket.index,
     });
   } else {
     savedMarketData.base = monitoringMarket.base;
@@ -548,7 +515,9 @@ function processData(monitoringMarket: MonitoringMarket, tickerData: Ticker) {
     savedMarketData.amount = monitoringMarket.amount;
     savedMarketData.changePercent = tickerData.percentage;
     savedMarketData.symbol = tickerData.symbol;
+    savedMarketData.index = monitoringMarket.index;
   }
+  savedMarketDatas.sort((a, b) => a.index - b.index);
   store.set(config.MARKETS_DATA, savedMarketDatas);
 }
 
