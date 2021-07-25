@@ -1,3 +1,5 @@
+# 亏了几个W，没有激情维护了，等ETH往上冲一冲，情绪上来继续维护（😂实际是没有时间）
+
 # Crypto currency monitor
 
 Pure crypto currency monitor
